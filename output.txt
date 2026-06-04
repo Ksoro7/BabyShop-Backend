@@ -1,0 +1,467 @@
+CAHIER DES CHARGES TECHNIQUE &
+FONCTIONNEL
+Plateforme E-commerce « Boutique En-Ligne » (BabyShop)
+
+
+  Nom du Projet :                   Boutique En-Ligne (BabyShop)
+  Cible :                           Prêt-à-porter & Mode (Enfants, Dames, Hommes...)
+  Statut du Projet :                Généré pour Validation Technique
+
+
+
+
+   1. Contexte & Objectifs
+
+Le projet consiste à mettre en place une boutique en ligne moderne permettant aux internautes d’acheter des
+produits de mode (enfants, dames, hommes…) sans passer par un tunnel de paiement conventionnel natif dans un
+premier temps. La finalisation et l'acheminement des commandes s'effectuent de manière simplifiée via des
+canaux de messagerie directs tels que WhatsApp ou e-mail.
+
+Objectifs business clés :
+
+ 1. Acquisition & Fidélisation : Augmenter le nombre de comptes clients enregistrés sur la plateforme grâce à
+   l'application systématique d'une remise d'inscription exclusive.
+ 2. Expérience Utilisateur Épurée : Simplifier au maximum le processus de commande, de transmission de
+   paniers et de suivi pour réduire les frictions à l'achat.
+ 3. Autonomie Opérationnelle : Donner aux équipes administratives et de gestion tous les outils nécessaires pour
+   piloter dynamiquement le catalogue, suivre en temps réel les stocks et éditer des rapports de ventes
+   consolidés.
+ 4. Sécurité & Confiance : Garantir une étanchéité totale dans la sécurité des flux de données et assurer une
+   conformité stricte vis-à-vis du Règlement Général sur la Protection des Données (RGPD).
+
+
+
+   2. Périmètre Fonctionnel
+
+  Fonctionnalité            Description                                          Acteur      Priorité
+
+  Inscription /             Formulaire e-mail + mot de passe, processus          Client       MVP
+  connexion                 complet de validation d’e-mail, génération et
+                            attribution automatique d’un code promo de
+                            bienvenue (ex. 10 %).
+
+  Gestion du profil         Consultation et modification des informations        Client       MVP
+                            personnelles, changement sécurisé du mot de passe,
+                            procédure de désactivation autonome du compte.
+
+
+
+
+Cahier des Charges - Confidentiel                                                                          Page 1
+  Fonctionnalité            Description                                               Acteur   Priorité
+
+  Catalogue produit         Affichage sous forme de liste paginée, filtres            Client   MVP
+                            multicritères (catégorie, prix, taille, couleur), modes
+                            de tri (nouveautés, popularité) et barre de recherche
+                            textuelle globale.
+
+  Fiche produit             Visualisation de photos et de vidéos descriptives,        Client   MVP
+                            fiche technique, prix unitaire, état de disponibilité
+                            (gestion des stocks) et action d'ajout au panier.
+
+  Panier d’achat            Ajout, suppression et modification des quantités          Client   MVP
+                            d'articles. Calcul dynamique du montant total avec
+                            déduction automatique des remises applicables
+                            avant validation.
+
+  Choix du jour de          Sélection du créneau de livraison parmi les options       Client   MVP
+  livraison                 définies (“Aujourd’hui”, “Demain”, “Dans 3 jours”).
+                            Contrôle et validation stricte de la cohérence côté
+                            serveur.
+
+  Création de               Génération d’une entité structurelle Order (statut        Client   MVP
+  commande                  initial = PENDING). Déclenchement automatique d’un
+                            message WhatsApp ou d’un e-mail contenant le
+                            récapitulatif exhaustif et un lien de paiement externe
+                            (Stripe/PayPal).
+
+  Annulation de             Droit de rétractation et d’annulation autonome d'une      Client   MVP
+  commande                  commande par le client tant que celle-ci conserve le
+                            statut PENDING. Expédition d'une notification
+                            d'annulation automatique.
+
+  Suggestion de             Formulaire d'expression libre permettant au client de     Client   Évolution
+  produit                   proposer un produit spécifique ou de suggérer une
+                            amélioration. Enregistrement en base de données et
+                            notification immédiate à l'administrateur.
+
+  Alertes de                Module d'inscription thématique par catégorie de          Client   Évolution
+  nouveauté                 produit. Envoi quotidien automatisé par e-mail ou
+                            WhatsApp regroupant les nouveautés du catalogue.
+
+  Gestion des médias        Téléversement (upload) d’images et de courtes             Admin    MVP
+                            séquences vidéo (limité à 5 Mo par fichier)
+                            s'appuyant sur l'utilisation d'URLs pré-signées AWS
+                            S3.
+
+  Gestion du                Interface d'administration de type CRUD complet           Admin    MVP
+  catalogue                 pour le pilotage des produits, des catégories et des
+                            niveaux de stocks. Possibilité d'activation ou
+                            désactivation instantanée d’un produit.
+
+  Gestion des               Console de suivi et liste filtrable par statut et par     Admin    MVP
+  commandes                 date. Mise à jour manuelle ou automatisée des
+                            statuts de traitement (IN_PROGRESS, SHIPPED,
+                            DELIVERED, CANCELLED).
+
+
+
+
+Cahier des Charges - Confidentiel                                                                          Page 2
+  Fonctionnalité            Description                                                Acteur           Priorité
+
+  Reporting ventes          Tableau de bord présentant les agrégats de ventes          Admin             MVP
+                            (jour, semaine, mois), le chiffre d’affaires global, le
+                            panier moyen et le top des produits les plus vendus.
+                            Module d'export natif aux formats CSV et Excel.
+
+  Gestion des rôles         Configuration initiale basée sur deux rôles distincts :    Admin             MVP
+                            USER (client standard) et ADMIN. Architecture ouverte
+                            permettant l'ajout ultérieur de profils spécifiques (ex.
+                            SUPPORT).
+
+  Gestion des               Modélisation des campagnes promotionnelles                 Admin             MVP
+  remises                   stockée en base et associée à l'utilisateur
+                            (génération de code promo unique, calcul en
+                            pourcentage ou montant fixe, définition de dates
+                            d’expiration).
+
+  Sécurité &                Implémentation des mécanismes de protection                Tous              MVP
+  conformité                globaux : authentification forte par JWT, chiffrement
+                            TLS (HTTPS), politiques CSP, HSTS et respect des
+                            directives RGPD (consentements explicites, droit à
+                            l'oubli).
+
+  Documentation API         Génération automatique et exposition de la                 Développeurs      MVP
+                            documentation technique via Swagger / OpenAPI
+                            pour l'ensemble des endpoints de la plateforme.
+
+
+
+
+   3. Modélisation des Données (Simplifiée)
+
+  Entité                     Attributs Clés                                            Relations
+
+  User                       id (UUID), email, passwordHash, firstName,                1-N → UserDiscount
+                             lastName, role, createdAt, isActive                       N-N → Category (Alertes)
+
+  UserDiscount               id, userId, discountCode, percentage, validUntil          N-1 → User
+
+  Category                   id, name, description                                     1-N → Product
+
+  Product                    id, sku, name, description, price, stockQty,              N-1 → Category
+                             categoryId, createdAt, isActive                           1-N → ProductMedia
+
+  ProductMedia               id, productId, type (IMAGE/VIDEO), url, order             N-1 → Product
+
+  Order                      id, userId, status, totalAmount, discountApplied,         N-1 → User
+                             deliveryDate, createdAt, updatedAt                        1-N → OrderItem
+
+  OrderItem                  id, orderId, productId, quantity, unitPrice, subtotal     N-1 → Order
+                                                                                       N-1 → Product
+
+  OrderNotification          id, orderId, channel (WHATSAPP/EMAIL), sentAt,            N-1 → Order
+                             status
+
+
+
+
+Cahier des Charges - Confidentiel                                                                                  Page 3
+  Entité                     Attributs Clés                                           Relations
+
+  AlertSubscription          id, userId, categoryId, createdAt                        N-1 → User
+                                                                                      N-1 → Category
+
+  Report                     Agrégats de ventes calculés (jour, semaine, mois)        Vue matérialisée indépendante
+
+
+
+
+   4. Architecture Technique
+
+  Couche                    Technologie Sélectionnée             Justification Technique
+
+  Front-end                 Angular 16 (SPA) + Angular           Garantit une interface utilisateur moderne, réactive et
+                            Material / Tailwind CSS, RxJS        performante. Supporte nativement le lazy-loading des
+                                                                 composants et ouvre la possibilité d'une transition vers une
+                                                                 PWA ou du SSR.
+
+  Back-end                  Java 17 + Spring Boot 3              Écosystème d'entreprise hautement robuste assurant une
+                            (WebFlux ou MVC), Spring             excellente productivité, une gestion unifiée de la sécurité et
+                            Security, Spring Data JPA, Spring    des performances optimales pour les traitements par lots
+                            Batch                                (rapports).
+
+  Base de données           PostgreSQL (ou MySQL)                Moteur de base de données relationnelle puissant assurant
+                                                                 l'intégrité transactionnelle (ACID), l'utilisation d'identifiants
+                                                                 natifs UUID et des indexations avancées sur les requêtes
+                                                                 de recherche.
+
+  Stockage média            Amazon S3 (ou Azure Blob             Offre une scalabilité infinie, des coûts de stockage
+                            Storage) + CDN CloudFront            extrêmement faibles et une diffusion ultra-rapide des
+                                                                 images et vidéos des produits via réseau de distribution de
+                                                                 contenu.
+
+  Messagerie                WhatsApp Business API via Twilio     Fournit des passerelles industrielles hautement fiables pour
+                            + SendGrid / Mailgun                 l'acheminement synchrone et asynchrone des notifications
+                                                                 clients fondamentales.
+
+  File d’attente            RabbitMQ ou Amazon SQS               Assure le découplage applicatif complet et une excellente
+                                                                 résilience lors du déclenchement asynchrone des
+                                                                 notifications de commande et de l'exécution des rapports
+                                                                 lourds.
+
+  Observabilité             Spring Boot Actuator +               Supervision en temps réel de la santé de l'application,
+                            Micrometer → Prometheus +            centralisation des journaux d'erreurs (logs) et mise en place
+                            Grafana, ELK Stack                   d'alertes proactives.
+
+  CI/CD                     GitHub Actions / GitLab CI +         Automatisation complète des phases de test, de
+                            Docker + Kubernetes (ou Azure        construction des images de conteneurs, de publication et
+                            App Service)                         de déploiement continu avec processus de rollback
+                                                                 simplifié.
+
+  Sécurité                  HTTPS (TLS 1.3), CSP, HSTS,          Garantit l'étanchéité absolue de l'infrastructure contre les
+                            Cookies SameSite, RGPD               injections et assure la protection juridique des données
+                            Consent Manager                      utilisateurs.
+
+
+
+
+Cahier des Charges - Confidentiel                                                                                            Page 4
+   5. Sécurité & Conformité
+
+  • Authentification : Utilisation de jetons JWT signés cryptographiquement (algorithmes HS256 ou RS256)
+   présentant une durée de validité courte (15 minutes) couplés à des Refresh Tokens persistants (valables 7
+   jours).
+  • Autorisation : Contrôle d'accès basé sur les rôles (RBAC) pris en charge de bout en bout par Spring Security
+   (validation des pré-requis ROLE_USER et ROLE_ADMIN sur chaque endpoint).
+  • Chiffrement des secrets : Hachage irréversible des mots de passe utilisateurs en base de données via
+   l'algorithme de référence BCrypt avec un facteur de force configuré à 12.
+  • Sécurisation des flux : Obligation stricte d'échange sous protocole HTTPS chiffré via TLS 1.3, avec
+   désactivation complète de l'ensemble des protocoles et suites de chiffrement obsolètes.
+  • Entêtes de sécurité (Headers) : Configuration et injection systématique des politiques de sécurité de contenu
+   au niveau des requêtes (Content-Security-Policy, X-Content-Type-Options, X-Frame-Options,
+   Referrer-Policy).
+  • Réglementation RGPD : Intégration d'un module de gestion transparente des consentements (cookies et
+   traceurs) et mise en place d'une fonction d'effacement complet des données sur demande de l'utilisateur («
+   droit à l'oubli »).
+  • Traçabilité & Audit : Génération de journaux d'audit d'accès détaillés (horodatage, acteur, adresse IP,
+   ressource ciblée) stockés de manière immuable pendant une durée glissante de 12 mois.
+  • Sauvegardes (Backups) : Réalisation de clichés et dumps quotidiens automatisés de la base de données
+   PostgreSQL associés au versioning des fichiers sur l'espace de stockage S3. Les procédures de restauration
+   sont testées et validées mensuellement.
+
+
+
+   6. Exigences Non-Fonctionnelles
+
+  • Performance : Temps de réponse global des APIs inférieur ou égal à 300 ms pour 95 % des requêtes de
+   consultation courantes.
+  • Scalabilité : Capacité de montée en charge horizontale automatique des serveurs backend via l'orchestration
+   de pods Kubernetes, et distribution optimisée du code frontend via serveurs NGINX scalables.
+  • Disponibilité : Engagement de disponibilité de service élevé fixé à un SLA de 99,5 % (les opérations de
+   maintenance planifiées ne devant pas excéder un cumul de 4 heures par mois).
+  • Extensibilité : Découpage modulaire du code source (modules Angular cloisonnés et services backend isolés)
+   facilitant une transition transparente vers une architecture micro-services si le volume d'affaires le requiert.
+  • Internationalisation (i18n) : Prise en charge native du multilinguisme (Français, Anglais) assurée par les
+   dictionnaires i18n d'Angular et la mise en place de structures de données adaptées en base de données.
+  • Accessibilité : Respect rigoureux des critères et standards d'accessibilité numérique internationaux
+   (conformité WCAG 2.1 au niveau d'exigence AA).
+  • Stratégie de test : Seuil minimal de couverture par tests unitaires fixé à 80 % du code backend (JUnit),
+   validation des intégrations via l'outil Testcontainers et exécution de plans de tests de bout en bout (E2E) via
+   Cypress.
+  • Documentation technique : Génération dynamique et exposition en continu des contrats d'interface via
+   Swagger / OpenAPI pour le backend et structuration des composants d'interface UI sous Storybook.
+
+
+
+
+Cahier des Charges - Confidentiel                                                                                 Page 5
+  • Gestion des environnements : Isolation complète et étanche de trois environnements distincts
+   (Développement, Test/Staging, Production) disposant chacun de leurs propres variables, secrets et instances
+   de bases de données.
+  • Gestion de la configuration : Centralisation sécurisée des clés d'APIs, secrets JWT et données sensibles via
+   des outils de coffre-fort numérique de type Spring Cloud Config ou Kubernetes ConfigMaps.
+
+
+
+   7. Cinématiques & Flux de Travail Clés
+
+7.1 Inscription & Attribution de Remise
+
+Lors de la saisie du formulaire d'inscription (e-mail + mot de passe), le backend procède à l'enregistrement de
+l'entité utilisateur à l'état inactif. Simultanément, le système génère un enregistrement au sein de la table
+UserDiscount contenant un code promotionnel unique de bienvenue (ex: WELCOME10), indexé sur une durée de
+validité stricte de 30 jours. Un courrier électronique contenant un lien d'activation sécurisé est immédiatement
+envoyé au client. Dès validation du lien, le compte bascule à l'état actif, et la réduction est automatiquement
+associée aux futures étapes de finalisation de paniers d'achat.
+
+7.2 Création & Routage de Commande
+
+Lorsque l'utilisateur clique sur le bouton « Passer la commande » depuis son panier d'achat, le frontend émet un
+objet d'échange de données (DTO) nommé CreateOrderRequest contenant la liste détaillée des articles et le
+choix de livraison retenu. Le composant backend instancie alors un enregistrement Order doté du statut initial
+PENDING et calcule de manière sécurisée le montant global de la transaction (somme des prix unitaires multipliée
+par les quantités, déduction faite de la remise validée).
+
+L'événement applicatif OrderCreatedEvent est immédiatement poussé au sein de la file d'attente asynchrone
+(Queue). Un service d'écoute (Worker) consomme le message et déclenche de manière asynchrone l'envoi d'un
+message structuré WhatsApp Business contenant le récapitulatif complet ainsi qu'un lien d'accès sécurisé vers la
+passerelle de paiement Stripe ou PayPal. Un e-mail miroir identique est acheminé de manière optionnelle. Dès
+finalisation du paiement externe par le client, un mécanisme d'écoute automatique (Webhook) Stripe/PayPal notifie
+le backend qui bascule de manière sécurisée le statut de la commande à l'état PAID avant d'expédier une
+notification de confirmation finale à l'utilisateur.
+
+7.3 Procédure d'Annulation
+
+Tant qu'une commande conserve son statut à l'état PENDING ou PAID (sous réserve qu'elle ne soit pas encore
+entrée en phase de préparation ou d'expédition), le client dispose de la faculté de soumettre une requête
+d'annulation via l'appel de l'endpoint DELETE /orders/{id}. Le backend effectue les vérifications d'usage, met
+à jour le statut vers la valeur CANCELLED, publie un événement OrderCancelledEvent dans le système et
+orchestre l'envoi immédiat de notifications d'annulation aux acteurs concernés.
+
+7.5 Calcul et Consolidation des Rapports de Ventes
+
+Un ordonnanceur de tâches automatisé (Scheduler) se déclenche quotidiennement en période de basse activité
+pour exécuter le traitement par lots OrderReportJob (Spring Batch). Cette procédure extrait l'ensemble des
+données transactionnelles de la journée afin de calculer et regrouper les indicateurs de performances (CA, panier
+moyen, volume par catégorie) et vient alimenter une vue matérialisée dédiée aux performances au sein de la base
+de données. Les interfaces graphiques d'administration consomment ces données via l'API /admin/reports/
+orders?period=day|week|month. Un mécanisme d'export dédié accessible sur l'endpoint GET /admin/
+
+
+
+Cahier des Charges - Confidentiel                                                                          Page 6
+reports/orders/export permet l'extraction à la demande de ces métriques clés sous forme de tableurs
+exploitables de type CSV ou Excel.
+
+
+
+   8. Planification des Livrables
+
+  Livrable Attendu                     Description Technique du Contenu                         Date Cible
+
+  Spécifications Fonctionnelles        Cas d'utilisation formalisés (Use-Cases), maquettes      Semaine + 2
+  Détaillées                           d'interfaces (Wireframes UI) et diagrammes de
+                                       séquence détaillés des flux clés.
+
+  Modèle de Données Logique (ERD)      Schéma complet des entités de la base de données         Semaine + 2
+                                       PostgreSQL incluant l'ensemble des contraintes,
+                                       index et types d'attributs.
+
+  Contrat d’Interface API (OpenAPI)    Spécifications techniques des routes exposées aux        Semaine + 3
+                                       formats Swagger JSON / YAML et documentation
+                                       textuelle au format Markdown.
+
+  Front-end Web Angular                Dépôt du code source de l'application cliente Angular,   Semaine + 8
+                                       implémentation des tests d'intégration Cypress et
+                                       configuration du build Docker.
+
+  Back-end Spring Boot                 Dépôt du code source du moteur de services,              Semaine + 8
+                                       écriture de la suite de tests automatisés JUnit et
+                                       génération de l'image de conteneur Docker.
+
+  Infrastructure as Code (IaC)         Écriture des scripts de déploiement automatisés via      Semaine + 9
+                                       scripts Terraform et scripts d'orchestration de
+                                       conteneurs Helm Charts.
+
+  Pipelines CI/CD                      Configuration complète des flux d'intégration et de      Semaine + 10
+                                       déploiement continus via GitHub Actions ou GitLab
+                                       CI vers les environnements cibles.
+
+  Guide d’Exploitation & Maintenance   Documentation des procédures techniques                  Semaine + 11
+                                       d'exploitation, méthodologies de backup, plans de
+                                       reprise d'activité et configuration du monitoring.
+
+  Documentation Utilisateur            Rédaction des guides de prise en main des consoles       Semaine + 12
+                                       d'administration, foire aux questions (FAQ) et
+                                       formalisation des politiques RGPD.
+
+  Déploiement MVP V1.0 en Production   Mise en ligne opérationnelle complète de la              Semaine + 14
+                                       plateforme e-commerce (site vitrine, console
+                                       d'administration et routage des notifications).
+
+
+
+
+Cahier des Charges - Confidentiel                                                                              Page 7
+   9. Analyse & Atténuation des Risques
+
+  Risque Identifié                        Impact Projet       Stratégie d'Atténuation & Mitigation
+
+  Dépendance et validation de             Élevé               Mettre en œuvre dès le démarrage une solution de secours
+  l'API WhatsApp Business                                     (fallback) s'appuyant de manière transparente sur l'envoi d'e-
+                                                              mails. Lancer le processus de certification et d'approbation auprès
+                                                              de Meta dès la phase initiale du Sprint 4.
+
+  Traitement manuel ou sujet aux          Critique            Garantir une automatisation industrielle des flux de paiement en
+  erreurs des processus de                                    intégrant les systèmes de notifications automatisés (Webhooks)
+  paiement                                                    Stripe / PayPal au niveau de la version MVP pour valider
+                                                              l'ajustement des statuts de commande sans action humaine.
+
+  Inflation des volumes de                Modéré              Définir et appliquer une politique de gestion du cycle de vie des
+  données médias et dérive des                                objets (Lifecycle Policy) sur les compartiments Amazon S3
+  coûts de stockage Cloud                                     (archivage automatique après 90 jours et suppression
+                                                              systématique des fichiers orphelins).
+
+  Couverture ou implémentation            Élevé               Mener un audit de conformité systématique sur chaque point de
+  incomplète des exigences                                    collecte d'informations personnelles. Mettre à disposition une
+  RGPD                                                        interface simplifiée permettant l'effacement immédiat et
+                                                              irréversible de l'ensemble des données d'un profil client.
+
+  Dégradation des performances            Modéré              Mettre en place une logique de pagination stricte prise en charge
+  d'affichage de la boutique face                             par le serveur backend, optimiser l'utilisation des index sur la base
+  à la croissance du catalogue                                PostgreSQL, intégrer le lazy-loading sur les éléments graphiques
+                                                              et distribuer les fichiers via CDN.
+
+  Compromission ou fuite de la            Critique            Automatiser une rotation périodique des secrets de chiffrement
+  clé de chiffrement des jetons de                            tous les 30 jours et implémenter un mécanisme d'invalidation et
+  sécurité JWT                                                de mise sur liste noire (Blacklist) des jetons révoqués
+                                                              prématurément.
+
+
+
+
+   10. Glossaire Technique
+
+  Terme / Sigle                     Définition & Contexte d'Application
+
+  MVP                               Minimum Viable Product (Produit Minimum Viable) – Version initiale d'un produit regroupant
+                                    uniquement les fonctionnalités indispensables pour permettre son déploiement rapide
+                                    auprès des utilisateurs finaux.
+
+  JWT                               JSON Web Token – Standard ouvert de l'industrie (RFC 7519) définissant un format
+                                    compact et sécurisé pour l'échange d'informations d'authentification sous forme d'objet
+                                    JSON signé cryptographiquement.
+
+  S3                                Amazon Simple Storage Service – Service de stockage en ligne d'objets et de fichiers
+                                    hautement disponible, redondant et scalable proposé par la plateforme cloud Amazon Web
+                                    Services (AWS).
+
+  WhatsApp Business API             Interface de programmation applicative officielle émise par Meta permettant aux entreprises
+                                    d'automatiser, de structurer et d'expédier des messages à forte valeur ajoutée à grande
+                                    échelle vers les utilisateurs de la solution WhatsApp.
+
+
+
+Cahier des Charges - Confidentiel                                                                                             Page 8
+  Terme / Sigle                     Définition & Contexte d'Application
+
+  RBAC                              Role-Based Access Control – Modèle de gestion de la sécurité logicielle permettant de
+                                    restreindre et de valider les accès au système en attribuant des privilèges spécifiques à des
+                                    rôles standardisés (ex: Utilisateur, Administrateur).
+
+  RGPD                              Règlement Général sur la Protection des Données – Cadre juridique de référence de
+                                    l'Union Européenne encadrant le traitement, la collecte, la transparence et la libre
+                                    circulation des données à caractère personnel.
+
+  PWA                               Progressive Web App – Application web s'appuyant sur des standards technologiques
+                                    modernes pour offrir aux utilisateurs une expérience visuelle et fonctionnelle similaire à
+                                    celle d'une application mobile native (installation sur l'écran d'accueil, exécution hors-
+                                    connexion).
+
+
+
+
+Cahier des Charges - Confidentiel                                                                                                Page 9
+
