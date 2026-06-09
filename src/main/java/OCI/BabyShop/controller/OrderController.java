@@ -3,6 +3,7 @@ package OCI.BabyShop.controller;
 import OCI.BabyShop.domain.Order;
 import OCI.BabyShop.dto.OrderEmailRequest;
 import OCI.BabyShop.dto.OrderRequest;
+import OCI.BabyShop.dto.UserOrderResponse;
 import OCI.BabyShop.service.OrderEmailService;
 import OCI.BabyShop.service.OrderService;
 import jakarta.validation.Valid;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -25,8 +27,19 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<Order> createOrder(@RequestBody OrderRequest request, Authentication authentication) {
         String userEmail = authentication.getName();
-        Order order = orderService.createOrder(userEmail, request.getProductQuantities(), request.getDiscountCode());
+        Order order = orderService.createOrder(userEmail, request.getProductQuantities(),
+                request.getDiscountCode(), request.getPaymentMethod());
         return ResponseEntity.ok(order);
+    }
+
+    @GetMapping("/mine")
+    public ResponseEntity<List<UserOrderResponse>> getMyOrders(Authentication authentication) {
+        return ResponseEntity.ok(orderService.getUserOrders(authentication.getName()));
+    }
+
+    @GetMapping("/mine/{id}")
+    public ResponseEntity<UserOrderResponse> getMyOrder(@PathVariable UUID id, Authentication authentication) {
+        return ResponseEntity.ok(orderService.getUserOrder(id, authentication.getName()));
     }
     
     @PostMapping("/email")

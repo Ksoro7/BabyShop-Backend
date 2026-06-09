@@ -9,4 +9,5 @@ import java.util.UUID;
 public class OrderRequest {
     private Map<UUID, Integer> productQuantities;
     private String discountCode;
+    private String paymentMethod;
 }

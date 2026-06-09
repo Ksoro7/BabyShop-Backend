@@ -10,15 +10,11 @@ import java.util.UUID;
 
 @Data
 @Builder
-public class AdminOrderResponse {
+public class UserOrderResponse {
     private UUID id;
-    private String customerName;
-    private String customerEmail;
-    private String customerPhone;
-    private BigDecimal subtotal;
-    private BigDecimal discount;
-    private BigDecimal total;
     private String status;
+    private BigDecimal totalAmount;
+    private BigDecimal discountApplied;
     private String paymentMethod;
     private String paymentReference;
     private String deliveryDate;
@@ -29,7 +25,6 @@ public class AdminOrderResponse {
     @Data
     @Builder
     public static class OrderItemDto {
-        private UUID id;
         private String productName;
         private String productImage;
         private int quantity;

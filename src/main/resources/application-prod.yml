@@ -45,5 +45,16 @@ app:
 jwt:
   secret: ${JWT_SECRET}
 
+admin:
+  email: ${ADMIN_EMAIL:admin@rabishop.com}
+  password: ${ADMIN_PASSWORD:Admin123!}
+
+cinetpay:
+  api-key: ${CINETPAY_API_KEY:}
+  site-id: ${CINETPAY_SITE_ID:}
+  notify-url: ${APP_BASE_URL:https://rabishop-backend.onrender.com}/api/payments/webhook
+  return-url: ${APP_BASE_URL:https://rabishop-backend.onrender.com}
+  sandbox: ${CINETPAY_SANDBOX:false}
+
 server:
   port: ${PORT:8081}

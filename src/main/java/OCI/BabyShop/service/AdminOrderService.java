@@ -76,6 +76,8 @@ public class AdminOrderService {
                 .discount(order.getDiscountApplied())
                 .total(order.getTotalAmount())
                 .status(order.getStatus().name())
+                .paymentMethod(order.getPaymentMethod())
+                .paymentReference(order.getPaymentReference())
                 .deliveryDate(order.getDeliveryDate() != null ? order.getDeliveryDate().toString() : null)
                 .items(itemDtos)
                 .createdAt(order.getCreatedAt())

@@ -1,12 +1,12 @@
 package OCI.BabyShop.config;
 
-import OCI.BabyShop.domain.Category;
-import OCI.BabyShop.domain.Discount;
-import OCI.BabyShop.repository.CategoryRepository;
-import OCI.BabyShop.repository.DiscountRepository;
+import OCI.BabyShop.domain.*;
+import OCI.BabyShop.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,12 +21,40 @@ public class DataInitializer implements CommandLineRunner {
 
     private final DiscountRepository discountRepository;
     private final CategoryRepository categoryRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @Value("${admin.email:admin@rabishop.com}")
+    private String adminEmail;
+
+    @Value("${admin.password:Admin123!}")
+    private String adminPassword;
 
     @Override
     @Transactional
     public void run(String... args) {
+        seedAdmin();
         seedDiscounts();
         seedCategories();
+    }
+
+    private void seedAdmin() {
+        if (userRepository.findByEmail(adminEmail).isPresent()) {
+            log.info("Admin déjà présent, skip seed");
+            return;
+        }
+
+        User admin = User.builder()
+                .email(adminEmail)
+                .passwordHash(passwordEncoder.encode(adminPassword))
+                .firstName("Admin")
+                .lastName("RaBiShop")
+                .phone("")
+                .role(Role.ADMIN)
+                .isActive(true)
+                .build();
+        userRepository.save(admin);
+        log.info("Admin créé : {}", adminEmail);
     }
 
     private void seedDiscounts() {
@@ -80,18 +108,18 @@ public class DataInitializer implements CommandLineRunner {
 
     private void seedCategories() {
         if (categoryRepository.count() > 0) {
-            categoryRepository.findByName("Chaussures").ifPresent(cat -> {
-                if (!"assets/images/medias.png".equals(cat.getImageUrl())) {
+            categoryRepository.findAll().forEach(cat -> {
+                if (cat.getImageUrl() == null) {
                     cat.setImageUrl("assets/images/medias.png");
                     categoryRepository.save(cat);
-                    log.info("Category image updated: {} -> {}", cat.getName(), cat.getImageUrl());
+                    log.info("Category image set: {} -> {}", cat.getName(), cat.getImageUrl());
                 }
             });
             return;
         }
 
         Category ordinateurs = categoryRepository.save(
-                Category.builder().name("Ordinateurs").build());
+                Category.builder().name("Ordinateurs").imageUrl("assets/images/medias.png").build());
         log.info("Seed category: {}", ordinateurs.getName());
 
         Category chaussures = categoryRepository.save(
@@ -99,13 +127,13 @@ public class DataInitializer implements CommandLineRunner {
         log.info("Seed category: {}", chaussures.getName());
 
         Category vetements = categoryRepository.save(
-                Category.builder().name("Vêtements").build());
+                Category.builder().name("Vêtements").imageUrl("assets/images/medias.png").build());
         log.info("Seed category: {}", vetements.getName());
 
         List.of(
-                Category.builder().name("Enfants / Bébé").parent(vetements).build(),
-                Category.builder().name("Femmes").parent(vetements).build(),
-                Category.builder().name("Hommes").parent(vetements).build()
+                Category.builder().name("Enfants / Bébé").parent(vetements).imageUrl("assets/images/medias.png").build(),
+                Category.builder().name("Femmes").parent(vetements).imageUrl("assets/images/medias.png").build(),
+                Category.builder().name("Hommes").parent(vetements).imageUrl("assets/images/medias.png").build()
         ).forEach(child -> {
             categoryRepository.save(child);
             log.info("Seed category: {} (parent: Vêtements)", child.getName());

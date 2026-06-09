@@ -38,6 +38,10 @@ public class Order {
 
     private LocalDate deliveryDate;
 
+    private String paymentMethod;
+
+    private String paymentReference;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();

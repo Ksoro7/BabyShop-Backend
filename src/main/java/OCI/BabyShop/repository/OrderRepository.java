@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface OrderRepository extends JpaRepository<Order, UUID> {
@@ -19,4 +20,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     @Query("SELECT CASE WHEN COUNT(oi) > 0 THEN true ELSE false END FROM OrderItem oi WHERE oi.product.id = :productId")
     boolean hasOrderItemsForProduct(@Param("productId") UUID productId);
+
+    Optional<Order> findByPaymentReference(String paymentReference);
 }

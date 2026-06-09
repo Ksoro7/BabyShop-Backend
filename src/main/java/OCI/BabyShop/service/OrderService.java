@@ -1,6 +1,7 @@
 package OCI.BabyShop.service;
 
 import OCI.BabyShop.domain.*;
+import OCI.BabyShop.dto.UserOrderResponse;
 import OCI.BabyShop.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -10,8 +11,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,13 +30,15 @@ public class OrderService {
     private final CartService cartService;
 
     @Transactional
-    public Order createOrder(String userEmail, Map<UUID, Integer> productQuantities, String discountCode) {
+    public Order createOrder(String userEmail, Map<UUID, Integer> productQuantities,
+                             String discountCode, String paymentMethod) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur non trouvé"));
 
         Order order = Order.builder()
                 .user(user)
                 .status(OrderStatus.PENDING)
+                .paymentMethod(paymentMethod != null ? paymentMethod : "WHATSAPP")
                 .deliveryDate(LocalDate.now().plusDays(2))
                 .build();
 
@@ -149,5 +155,56 @@ public class OrderService {
             productRepository.save(p);
         }
         orderRepository.save(order);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserOrderResponse> getUserOrders(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur non trouvé"));
+        return orderRepository.findByUserId(user.getId()).stream()
+                .map(this::toUserResponse)
+                .sorted(Comparator.comparing(UserOrderResponse::getCreatedAt).reversed())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public UserOrderResponse getUserOrder(UUID orderId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur non trouvé"));
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Commande non trouvée"));
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cette commande ne vous appartient pas");
+        }
+        return toUserResponse(order);
+    }
+
+    private UserOrderResponse toUserResponse(Order order) {
+        List<UserOrderResponse.OrderItemDto> itemDtos = order.getItems().stream()
+                .map(item -> {
+                    String imageUrl = item.getProduct().getMediaList().isEmpty() ? null
+                            : item.getProduct().getMediaList().get(0).getUrl();
+                    return UserOrderResponse.OrderItemDto.builder()
+                            .productName(item.getProduct().getName())
+                            .productImage(imageUrl)
+                            .quantity(item.getQuantity())
+                            .unitPrice(item.getUnitPrice())
+                            .subtotal(item.getSubtotal())
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return UserOrderResponse.builder()
+                .id(order.getId())
+                .status(order.getStatus().name())
+                .totalAmount(order.getTotalAmount())
+                .discountApplied(order.getDiscountApplied())
+                .paymentMethod(order.getPaymentMethod())
+                .paymentReference(order.getPaymentReference())
+                .deliveryDate(order.getDeliveryDate() != null ? order.getDeliveryDate().toString() : null)
+                .items(itemDtos)
+                .createdAt(order.getCreatedAt())
+                .updatedAt(order.getUpdatedAt())
+                .build();
     }
 }
