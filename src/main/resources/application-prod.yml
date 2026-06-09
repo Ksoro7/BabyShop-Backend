@@ -41,6 +41,7 @@ spring:
 
 app:
   base-url: ${APP_BASE_URL:https://rabishop-backend.onrender.com}
+  cors-origins: ${CORS_ORIGINS:http://localhost:4200,https://babyshop-frontend-ci.onrender.com,https://*.onrender.com}
 
 jwt:
   secret: ${JWT_SECRET}
