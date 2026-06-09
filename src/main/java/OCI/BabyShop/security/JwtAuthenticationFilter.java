@@ -69,20 +69,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
 
         } catch (ExpiredJwtException e) {
-            log.warn("JWT: token EXPIRÉ pour {}", path);
-            if (!response.isCommitted()) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write("{\"error\": \"Token expiré\", \"message\": \"Votre session a expiré, veuillez vous reconnecter.\"}");
-            }
+            log.warn("JWT: token EXPIRÉ pour {} - passage sans authentification", path);
+            filterChain.doFilter(request, response);
 
         } catch (JwtException | IllegalArgumentException e) {
-            log.error("JWT: token MALFORMÉ pour {} : {}", path, e.getMessage());
-            if (!response.isCommitted()) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write("{\"error\": \"Token invalide\", \"message\": \"Le token de sécurité est mal formé ou invalide.\"}");
-            }
+            log.error("JWT: token invalide pour {} : {} - passage sans authentification", path, e.getMessage());
+            filterChain.doFilter(request, response);
         }
     }
 }
