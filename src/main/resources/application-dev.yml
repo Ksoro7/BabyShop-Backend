@@ -23,6 +23,6 @@ spring:
             enable: true
 
 jwt:
-  secret: QmFieVNob3BTZWNyZXRLZXkyMDI0Rm9ySldUQXV0aGVudGljYXRpb24h
+  secret: Xs/kBiGY9+dy/cF0+LXJKCAenMoXu57gSkKgcmE2OXE=
   expiration: 86400000
   refresh-expiration: 604800000
