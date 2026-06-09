@@ -33,4 +33,4 @@ build/
 .vscode/
 
 ### Secrets ###
-src/main/resources/application-prod.yml
+# src/main/resources/application-prod.yml — retiré car nécessaire au déploiement Render
