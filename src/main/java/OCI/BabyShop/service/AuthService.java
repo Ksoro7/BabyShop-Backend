@@ -14,7 +14,9 @@ import OCI.BabyShop.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -55,9 +57,6 @@ public class AuthService {
         if (request.getPassword() == null || request.getPassword().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le mot de passe ne peut pas être vide");
         }
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cet email est déjà utilisé");
-        }
 
         User user = User.builder()
                 .email(request.getEmail())
@@ -68,17 +67,11 @@ public class AuthService {
                 .isActive(true)
                 .build();
 
-        userRepository.save(user);
-
-        UserDiscount discount = UserDiscount.builder()
-                .user(user)
-                .discountCode("WELCOME10-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
-                .percentage(new BigDecimal("10.00"))
-                .validUntil(LocalDateTime.now().plusDays(30))
-                .isUsed(false)
-                .build();
-
-        userDiscountRepository.save(discount);
+        try {
+            userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cet email est déjà utilisé");
+        }
 
         String accessToken = jwtUtil.generateToken(user);
         String refreshToken = jwtUtil.generateRefreshToken(user);
@@ -91,6 +84,9 @@ public class AuthService {
                 .build();
         refreshTokenRepository.save(refreshTokenEntity);
 
+        String discountCode = "WELCOME10-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        creerDiscount(user, discountCode);
+
         log.info("Nouvel utilisateur enregistré : {}", request.getEmail());
 
         return AuthResponse.builder()
@@ -98,16 +94,27 @@ public class AuthService {
                 .refreshToken(refreshToken)
                 .role(user.getRole().name())
                 .email(user.getEmail())
+                .welcomeDiscountCode(discountCode)
                 .build();
     }
 
+    private void creerDiscount(User user, String discountCode) {
+        UserDiscount discount = UserDiscount.builder()
+                .user(user)
+                .discountCode(discountCode)
+                .percentage(new BigDecimal("10.00"))
+                .validUntil(LocalDateTime.now().plusDays(30))
+                .isUsed(false)
+                .build();
+        userDiscountRepository.save(discount);
+    }
+
     public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
+        Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur non trouvé"));
+        User user = (User) authentication.getPrincipal();
 
         String accessToken = jwtUtil.generateToken(user);
         String refreshToken = jwtUtil.generateRefreshToken(user);

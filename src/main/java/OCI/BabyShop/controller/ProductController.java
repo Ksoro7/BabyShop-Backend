@@ -1,6 +1,6 @@
 package OCI.BabyShop.controller;
 
-import OCI.BabyShop.domain.Product;
+import OCI.BabyShop.dto.ProductResponseDto;
 import OCI.BabyShop.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,14 +19,15 @@ public class ProductController {
     private final ProductService productService;
 
     @GetMapping
-    public ResponseEntity<Page<Product>> getProducts(
+    public ResponseEntity<Page<ProductResponseDto>> getProducts(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) UUID categoryId,
             @PageableDefault(size = 20, sort = "name") Pageable pageable) {
-        return ResponseEntity.ok(productService.searchProducts(keyword, pageable));
+        return ResponseEntity.ok(productService.searchProducts(keyword, categoryId, pageable));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Product> getProduct(@PathVariable UUID id) {
+    public ResponseEntity<ProductResponseDto> getProduct(@PathVariable UUID id) {
         return ResponseEntity.ok(productService.getActiveProduct(id));
     }
 }

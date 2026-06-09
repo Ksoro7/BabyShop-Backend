@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -100,10 +101,21 @@ public class CartService {
     @Transactional
     public CartResponse mergeCart(String userEmail, CartMergeRequest request) {
         Cart cart = getOrCreateCart(userEmail);
+
+        // Optimisation: charger tous les produits en une seule requête pour éviter le problème N+1
+        List<UUID> productIds = request.getItems().stream()
+                .map(CartMergeRequest.MergeItem::getProductId)
+                .collect(Collectors.toList());
+
+        Map<UUID, Product> productsMap = productRepository.findAllById(productIds)
+                .stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
         for (CartMergeRequest.MergeItem mergeItem : request.getItems()) {
-            Product product = productRepository.findById(mergeItem.getProductId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "Produit non trouvé: " + mergeItem.getProductId()));
+            Product product = productsMap.get(mergeItem.getProductId());
+            if (product == null) {
+                continue; // Ignorer les produits non trouvés au lieu de lancer une exception
+            }
 
             cart.getItems().stream()
                     .filter(item -> item.getProduct().getId().equals(mergeItem.getProductId()))

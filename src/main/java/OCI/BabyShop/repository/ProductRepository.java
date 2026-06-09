@@ -23,10 +23,24 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     Page<Product> findByCategoryId(UUID categoryId, Pageable pageable);
 
+    long countByCategoryId(UUID categoryId);
+
+    /**
+     * Produits actifs et en stock d'une catégorie donnée.
+     */
+    @Query("SELECT p FROM Product p WHERE p.category.id = :categoryId AND p.isActive = true AND p.stockQty > 0")
+    Page<Product> findActiveByCategoryId(@Param("categoryId") UUID categoryId, Pageable pageable);
+
+    /**
+     * Recherche par mot-clé dans une catégorie spécifique (produits actifs et en stock).
+     */
+    @Query("SELECT p FROM Product p WHERE p.category.id = :categoryId AND p.isActive = true AND p.stockQty > 0 AND (LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<Product> searchActiveByKeywordAndCategoryId(@Param("keyword") String keyword, @Param("categoryId") UUID categoryId, Pageable pageable);
+
     long countByStockQty(int stockQty);
 
-    @Query("SELECT COUNT(p) FROM Product p WHERE p.stockQty BETWEEN 1 AND 10")
-    long countStockFaible();
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.stockQty > 0 AND p.stockQty <= :threshold")
+    long countStockFaible(@Param("threshold") int threshold);
 
     List<Product> findTop5ByOrderByStockQtyAsc(Pageable pageable);
 }

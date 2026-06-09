@@ -21,6 +21,8 @@ import java.util.UUID;
 @Builder
 @SQLRestriction("deleted = false")
 public class Product {
+
+    public static final int LOW_STOCK_THRESHOLD = 10;
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -40,9 +42,8 @@ public class Product {
     @Column(nullable = false)
     private Integer stockQty;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Category category;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -59,13 +60,16 @@ public class Product {
     @Builder.Default
     private boolean deleted = false;
 
+    @Version
+    private Long version;
+
     public enum StockStatus {
         DISPONIBLE, STOCK_FAIBLE, RUPTURE
     }
 
     public StockStatus getStockStatus() {
         if (stockQty == null || stockQty == 0) return StockStatus.RUPTURE;
-        if (stockQty <= 10) return StockStatus.STOCK_FAIBLE;
+        if (stockQty <= LOW_STOCK_THRESHOLD) return StockStatus.STOCK_FAIBLE;
         return StockStatus.DISPONIBLE;
     }
 }

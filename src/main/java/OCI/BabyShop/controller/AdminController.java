@@ -2,6 +2,7 @@ package OCI.BabyShop.controller;
 
 import OCI.BabyShop.domain.Product;
 import OCI.BabyShop.dto.ProductRequest;
+import OCI.BabyShop.dto.ProductResponseDto;
 import OCI.BabyShop.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +38,7 @@ public class AdminController {
     private String baseUrl;
 
     @GetMapping
-    public ResponseEntity<List<Product>> getAllProducts() {
+    public ResponseEntity<List<ProductResponseDto>> getAllProducts() {
         return ResponseEntity.ok(productService.getAllProducts());
     }
 

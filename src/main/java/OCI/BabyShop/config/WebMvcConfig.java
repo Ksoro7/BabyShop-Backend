@@ -1,8 +1,8 @@
 package OCI.BabyShop.config;
 
-import OCI.BabyShop.security.AuditInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -11,7 +11,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
 
-    private final AuditInterceptor auditInterceptor;
+    private final HandlerInterceptor auditInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

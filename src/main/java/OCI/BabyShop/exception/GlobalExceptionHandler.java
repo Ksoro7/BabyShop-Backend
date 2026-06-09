@@ -56,4 +56,10 @@ public class GlobalExceptionHandler {
     public Map<String, String> handleIllegalArgument(IllegalArgumentException ex) {
         return Map.of("erreur", ex.getMessage() != null ? ex.getMessage() : "Requête invalide");
     }
+
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> handleOptimisticLock(org.springframework.orm.ObjectOptimisticLockingFailureException ex) {
+        return Map.of("erreur", "Le stock a été modifié entre-temps. Veuillez réessayer.");
+    }
 }

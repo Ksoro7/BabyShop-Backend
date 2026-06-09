@@ -4,8 +4,10 @@ import OCI.BabyShop.domain.Category;
 import OCI.BabyShop.domain.Order;
 import OCI.BabyShop.domain.Product;
 import OCI.BabyShop.domain.ProductMedia;
+import static OCI.BabyShop.domain.Product.LOW_STOCK_THRESHOLD;
 import OCI.BabyShop.dto.DashboardStatsResponse;
 import OCI.BabyShop.dto.ProductRequest;
+import OCI.BabyShop.dto.ProductResponseDto;
 import OCI.BabyShop.repository.CartItemRepository;
 import OCI.BabyShop.repository.CategoryRepository;
 import OCI.BabyShop.repository.OrderRepository;
@@ -37,15 +39,61 @@ public class ProductService {
     private final CartItemRepository cartItemRepository;
     private final ProductMediaRepository productMediaRepository;
 
-    public Page<Product> searchProducts(String keyword, Pageable pageable) {
-        if (keyword == null || keyword.isBlank()) {
-            return productRepository.findAllActive(pageable);
+    /**
+     * Recherche les produits actifs avec filtres optionnels par mot-clé et/ou catégorie.
+     * @param keyword    mot-clé pour la recherche (null ou vide = pas de filtre texte)
+     * @param categoryId ID de catégorie (null = pas de filtre catégorie)
+     * @param pageable   pagination / tri
+     * @return page de produits actifs et en stock
+     */
+    @Transactional(readOnly = true)
+    public Page<ProductResponseDto> searchProducts(String keyword, UUID categoryId, Pageable pageable) {
+        Page<Product> products;
+        if (categoryId != null) {
+            if (keyword != null && !keyword.isBlank()) {
+                products = productRepository.searchActiveByKeywordAndCategoryId(keyword, categoryId, pageable);
+            } else {
+                products = productRepository.findActiveByCategoryId(categoryId, pageable);
+            }
+        } else if (keyword == null || keyword.isBlank()) {
+            products = productRepository.findAllActive(pageable);
+        } else {
+            products = productRepository.searchByKeyword(keyword, pageable);
         }
-        return productRepository.searchByKeyword(keyword, pageable);
+        return products.map(this::toResponseDto);
     }
 
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
+    private ProductResponseDto toResponseDto(Product product) {
+        List<ProductResponseDto.MediaInfo> mediaList = product.getMediaList().stream()
+                .map(m -> ProductResponseDto.MediaInfo.builder()
+                        .id(m.getId())
+                        .url(m.getUrl())
+                        .type(m.getType().name())
+                        .order(m.getOrder())
+                        .build())
+                .toList();
+        String imageUrl = mediaList.isEmpty() ? null : mediaList.get(0).getUrl();
+        return ProductResponseDto.builder()
+                .id(product.getId())
+                .sku(product.getSku())
+                .name(product.getName())
+                .description(product.getDescription())
+                .price(product.getPrice())
+                .stockQty(product.getStockQty())
+                .stockStatus(product.getStockStatus().name())
+                .category(new ProductResponseDto.CategoryInfo(product.getCategory().getId(), product.getCategory().getName()))
+                .mediaList(mediaList)
+                .imageUrl(imageUrl)
+                .isActive(product.isActive())
+                .createdAt(product.getCreatedAt())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductResponseDto> getAllProducts() {
+        return productRepository.findAll().stream()
+                .map(this::toResponseDto)
+                .toList();
     }
 
     public Product getProduct(UUID id) {
@@ -53,9 +101,11 @@ public class ProductService {
                 .orElseThrow(() -> new IllegalArgumentException("Produit non trouvé"));
     }
 
-    public Product getActiveProduct(UUID id) {
-        return productRepository.findActiveById(id)
+    @Transactional(readOnly = true)
+    public ProductResponseDto getActiveProduct(UUID id) {
+        Product product = productRepository.findActiveById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Produit non trouvé ou indisponible"));
+        return toResponseDto(product);
     }
 
     @Transactional
@@ -171,7 +221,7 @@ public class ProductService {
 
     public DashboardStatsResponse getDashboardStats() {
         long ruptureCount = productRepository.countByStockQty(0);
-        long stockFaibleCount = productRepository.countStockFaible();
+        long stockFaibleCount = productRepository.countStockFaible(LOW_STOCK_THRESHOLD);
 
         LocalDate today = LocalDate.now();
         LocalDateTime start = today.atStartOfDay();
