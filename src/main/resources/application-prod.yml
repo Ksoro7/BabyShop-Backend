@@ -27,6 +27,10 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
 
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
