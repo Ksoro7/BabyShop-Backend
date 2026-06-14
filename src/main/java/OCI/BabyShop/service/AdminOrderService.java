@@ -5,9 +5,11 @@ import OCI.BabyShop.domain.OrderStatus;
 import OCI.BabyShop.dto.AdminOrderResponse;
 import OCI.BabyShop.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
@@ -16,8 +18,10 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminOrderService {
 
+    // @change [PROD-READY] Suppression email (OrderEmailService désactivé) - 2026-06-12
     private final OrderRepository orderRepository;
 
     @Transactional(readOnly = true)
@@ -39,8 +43,11 @@ public class AdminOrderService {
     public AdminOrderResponse updateStatus(UUID id, String status) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Commande non trouvée"));
-        order.setStatus(OrderStatus.valueOf(status));
+
+        OrderStatus newStatus = OrderStatus.valueOf(status);
+        order.setStatus(newStatus);
         orderRepository.save(order);
+
         return toResponse(order);
     }
 
@@ -51,11 +58,20 @@ public class AdminOrderService {
 
         List<AdminOrderResponse.OrderItemDto> itemDtos = order.getItems().stream()
                 .map(item -> {
-                    String imageUrl = item.getProduct().getMediaList().isEmpty() ? null
-                            : item.getProduct().getMediaList().get(0).getUrl();
+                    String productName;
+                    String imageUrl = null;
+                    try {
+                        productName = item.getProduct().getName();
+                        if (!item.getProduct().getMediaList().isEmpty()) {
+                            imageUrl = item.getProduct().getMediaList().get(0).getUrl();
+                        }
+                    } catch (EntityNotFoundException e) {
+                        log.warn("Produit introuvable (supprimé) pour la commande {}", order.getId());
+                        productName = "Produit supprimé";
+                    }
                     return AdminOrderResponse.OrderItemDto.builder()
                             .id(item.getId())
-                            .productName(item.getProduct().getName())
+                            .productName(productName)
                             .productImage(imageUrl)
                             .quantity(item.getQuantity())
                             .unitPrice(item.getUnitPrice())

@@ -48,6 +48,10 @@ public class User implements UserDetails {
 
     private boolean isActive;
 
+    // @change [PROD-READY] Champs pour la réinitialisation de mot de passe - 2026-06-12
+    private String resetPasswordToken;
+    private LocalDateTime resetPasswordTokenExpiry;
+
     @Override
     public String getPassword() {
         return passwordHash;

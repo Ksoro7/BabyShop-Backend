@@ -60,8 +60,9 @@ public class Product {
     @Builder.Default
     private boolean deleted = false;
 
+    @Builder.Default
     @Version
-    private Long version;
+    private Long version = 0L;
 
     public enum StockStatus {
         DISPONIBLE, STOCK_FAIBLE, RUPTURE

@@ -26,22 +26,11 @@ spring:
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+      - org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration
 
   jackson:
     serialization:
       write-dates-as-timestamps: false
-
-  mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
 
 app:
   base-url: ${APP_BASE_URL:https://rabishop-backend.onrender.com}
@@ -53,13 +42,6 @@ jwt:
 admin:
   email: ${ADMIN_EMAIL:admin@rabishop.com}
   password: ${ADMIN_PASSWORD:Admin123!}
-
-cinetpay:
-  api-key: ${CINETPAY_API_KEY:}
-  site-id: ${CINETPAY_SITE_ID:}
-  notify-url: ${APP_BASE_URL:https://rabishop-backend.onrender.com}/api/payments/webhook
-  return-url: ${APP_BASE_URL:https://rabishop-backend.onrender.com}
-  sandbox: ${CINETPAY_SANDBOX:false}
 
 server:
   port: ${PORT:8081}

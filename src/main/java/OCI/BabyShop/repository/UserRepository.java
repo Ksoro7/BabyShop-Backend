@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
+    // @change [PROD-READY] Recherche par token de reset - 2026-06-12
+    Optional<User> findByResetPasswordToken(String resetPasswordToken);
 }

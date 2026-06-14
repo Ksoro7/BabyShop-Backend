@@ -34,3 +34,6 @@ build/
 
 ### Secrets ###
 # src/main/resources/application-prod.yml — retiré car nécessaire au déploiement Render
+application-dev.yml
+.env
+*.env

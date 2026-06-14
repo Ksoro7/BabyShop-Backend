@@ -2,7 +2,7 @@ spring:
   mail:
     host: localhost
     port: 3025
-    username: test
+    username: adminrabishop.online@gmail.com
     password: test
     properties:
       mail:

@@ -10,19 +10,12 @@ spring:
       ddl-auto: update
     open-in-view: false
 
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: babyshop@gmail.com
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+      - org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration
 
 jwt:
-  secret: QmFieVNob3BTZWN5ZXRLZXkyMDI0Rm9ySldUQXVOaGVudGljYXRpb24h
+  secret: ${JWT_SECRET:ZGV2LWJhYnlzaG9wLWxvY2FsLWp3dC1zZWNyZXQtbWluLTMyLWJ5dGVzLWtleQ==}
   expiration: 86400000
   refresh-expiration: 604800000

@@ -2,15 +2,18 @@ package OCI.BabyShop.service;
 
 import OCI.BabyShop.domain.Discount;
 import OCI.BabyShop.domain.PromoUsage;
+import OCI.BabyShop.domain.UserDiscount;
 import OCI.BabyShop.dto.PromoValidationRequest;
 import OCI.BabyShop.dto.PromoValidationResponse;
 import OCI.BabyShop.repository.DiscountRepository;
 import OCI.BabyShop.repository.PromoUsageRepository;
+import OCI.BabyShop.repository.UserDiscountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -18,13 +21,31 @@ public class PromoValidationService {
 
     private final DiscountRepository discountRepository;
     private final PromoUsageRepository promoUsageRepository;
+    private final UserDiscountRepository userDiscountRepository;
 
     public PromoValidationResponse valider(PromoValidationRequest req) {
         String code = req.getCode().toUpperCase().trim();
         BigDecimal montantPanier = req.getMontantPanier() != null ? req.getMontantPanier() : BigDecimal.ZERO;
 
         Discount discount = discountRepository.findByCode(code).orElse(null);
+
         if (discount == null) {
+            UserDiscount userDisc = userDiscountRepository.findByDiscountCode(code).orElse(null);
+            if (userDisc != null) {
+                if (userDisc.isUsed()) {
+                    return invalide("Ce code promo a déjà été utilisé.");
+                }
+                if (userDisc.getValidUntil() != null && LocalDateTime.now().isAfter(userDisc.getValidUntil())) {
+                    return invalide("Ce code promo a expiré.");
+                }
+                BigDecimal remise = montantPanier.multiply(userDisc.getPercentage()).divide(BigDecimal.valueOf(100));
+                return PromoValidationResponse.builder()
+                        .valide(true)
+                        .remise(remise)
+                        .type("percentage")
+                        .message("Code " + code + " appliqué : -" + userDisc.getPercentage() + "%")
+                        .build();
+            }
             return invalide("Code promo invalide.");
         }
 

@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /*
  * Refactored:
@@ -46,6 +47,35 @@ public class AuthController {
         }
         authService.logout(refreshToken);
         return ResponseEntity.ok(Map.of("message", "Déconnexion réussie"));
+    }
+
+    // @change [PROD-READY] Endpoint mot de passe oublié - 2026-06-12
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "L'adresse email est requise"));
+        }
+        Map<String, String> response = authService.forgotPassword(email);
+        return ResponseEntity.ok(response);
+    }
+
+    // @change [PROD-READY] Endpoint réinitialisation mot de passe - 2026-06-12
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(@RequestBody Map<String, String> body) {
+        String token = body.get("token");
+        String newPassword = body.get("newPassword");
+        if (token == null || token.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Le token est requis"));
+        }
+        if (newPassword == null || newPassword.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Le nouveau mot de passe est requis"));
+        }
+        Map<String, String> response = authService.resetPassword(token, newPassword);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/refresh")

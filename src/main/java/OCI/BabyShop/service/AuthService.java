@@ -25,7 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
+import java.util.Map;
 import java.util.UUID;
 
 /*
@@ -51,6 +54,13 @@ public class AuthService {
 
     @Value("${jwt.refresh-expiration}")
     private long refreshExpirationInMs;
+
+    @Value("${app.base-url:http://localhost:4200}")
+    private String appBaseUrl;
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final int TOKEN_BYTES = 32;
+    private static final long TOKEN_VALIDITY_HOURS = 1;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -141,6 +151,72 @@ public class AuthService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token de rafraîchissement invalide"));
         storedToken.setRevoked(true);
         refreshTokenRepository.save(storedToken);
+    }
+
+    @Transactional
+    public Map<String, String> forgotPassword(String email) {
+        // SÉCURITÉ : Réponse identique que l'email existe ou non (évite l'énumération d'emails)
+        String responseMessage = "Si cet email existe, vous recevrez un lien de réinitialisation.";
+
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            log.info("Tentative de réinitialisation pour email inconnu: {}", email);
+            return Map.of("message", responseMessage);
+        }
+
+        byte[] tokenBytes = new byte[TOKEN_BYTES];
+        SECURE_RANDOM.nextBytes(tokenBytes);
+        String token = HexFormat.of().formatHex(tokenBytes);
+
+        user.setResetPasswordToken(token);
+        user.setResetPasswordTokenExpiry(LocalDateTime.now().plusHours(TOKEN_VALIDITY_HOURS));
+        userRepository.save(user);
+
+        String resetLink = appBaseUrl + "/reset-password?token=" + token;
+        // SÉCURITÉ : Email désactivé pour l'instant, on logge le lien
+        log.info("Reset password link: {}", resetLink);
+
+        return Map.of("message", responseMessage);
+    }
+
+    @Transactional
+    public Map<String, String> resetPassword(String token, String newPassword) {
+        // RÈGLE MÉTIER : Validation du mot de passe
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Le mot de passe doit contenir au moins 8 caractères");
+        }
+        if (!newPassword.matches(".*[A-Z].*")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Le mot de passe doit contenir au moins une majuscule");
+        }
+        if (!newPassword.matches(".*[0-9].*")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Le mot de passe doit contenir au moins un chiffre");
+        }
+        if (!newPassword.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?].*")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Le mot de passe doit contenir au moins un caractère spécial");
+        }
+
+        User user = userRepository.findByResetPasswordToken(token)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Token de réinitialisation invalide"));
+
+        if (user.getResetPasswordTokenExpiry() == null
+                || user.getResetPasswordTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Token de réinitialisation expiré");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setResetPasswordToken(null);
+        user.setResetPasswordTokenExpiry(null);
+        userRepository.save(user);
+
+        log.info("Mot de passe réinitialisé pour: {}", user.getEmail());
+
+        return Map.of("message", "Mot de passe réinitialisé avec succès");
     }
 
     @Transactional

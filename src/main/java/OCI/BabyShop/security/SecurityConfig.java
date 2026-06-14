@@ -17,6 +17,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -39,6 +40,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    // @change [PROD-READY] Rate limiting sur les endpoints auth - 2026-06-12
+    private final RateLimitingFilter rateLimitingFilter;
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
@@ -91,7 +94,20 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+                // @change [PROD-READY] En-têtes de sécurité HTTP - 2026-06-12
+                // SÉCURITÉ : Protection contre le clickjacking (DENY), XSS, sniffing MIME, et HSTS
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.deny())
+                        // X-XSS-Protection non configuré (déprécié, retiré des navigateurs modernes)
+                        .contentTypeOptions(Customizer.withDefaults())
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000)
+                        )
+                )
                 .authenticationProvider(authenticationProvider())
+                // SÉCURITÉ : RateLimitingFilter avant JwtAuthenticationFilter (tous deux avant UsernamePasswordAuthenticationFilter)
+                .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

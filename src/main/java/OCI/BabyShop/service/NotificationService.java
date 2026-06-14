@@ -5,8 +5,8 @@ import OCI.BabyShop.domain.OrderNotification;
 import OCI.BabyShop.repository.OrderNotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -15,22 +15,24 @@ import java.time.LocalDateTime;
 @Slf4j
 public class NotificationService {
 
+    // @change [PROD-READY] Suppression email (OrderEmailService désactivé) - 2026-06-12
     private final OrderNotificationRepository notificationRepository;
 
-    @Async
     public void sendOrderNotifications(Order order) {
-        log.info("Simulation de l'envoi de WhatsApp pour la commande: " + order.getId());
-        saveNotification(order, OrderNotification.NotificationChannel.WHATSAPP);
-
-        log.info("Simulation de l'envoi de l'e-mail pour la commande: " + order.getId());
-        saveNotification(order, OrderNotification.NotificationChannel.EMAIL);
+        try {
+            saveNotification(order, OrderNotification.NotificationChannel.WHATSAPP, OrderNotification.NotificationStatus.SENT);
+        } catch (Exception e) {
+            log.warn("Impossible de sauvegarder la notification WHATSAPP: {}", e.getMessage());
+        }
     }
 
-    private void saveNotification(Order order, OrderNotification.NotificationChannel channel) {
+    @Transactional
+    private void saveNotification(Order order, OrderNotification.NotificationChannel channel,
+                                  OrderNotification.NotificationStatus status) {
         OrderNotification notif = OrderNotification.builder()
                 .order(order)
                 .channel(channel)
-                .status(OrderNotification.NotificationStatus.SENT)
+                .status(status)
                 .sentAt(LocalDateTime.now())
                 .build();
         notificationRepository.save(notif);

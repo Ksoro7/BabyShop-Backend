@@ -11,6 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final DiscountRepository discountRepository;
     private final PromoUsageRepository promoUsageRepository;
+    private final UserDiscountRepository userDiscountRepository;
     private final NotificationService notificationService;
     private final CartService cartService;
 
@@ -74,50 +76,66 @@ public class OrderService {
         Discount appliedDiscount = null;
 
         if (discountCode != null && !discountCode.isBlank()) {
-            appliedDiscount = discountRepository.findByCode(discountCode.toUpperCase().trim())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code promo invalide"));
+            String code = discountCode.toUpperCase().trim();
+            appliedDiscount = discountRepository.findByCode(code).orElse(null);
 
-            if (!appliedDiscount.isActif()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code promo inactif");
-            }
+            if (appliedDiscount == null) {
+                UserDiscount userDisc = userDiscountRepository.findByDiscountCode(code)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code promo invalide"));
 
-            LocalDate today = LocalDate.now();
-            if (appliedDiscount.getDateDebut() != null && today.isBefore(appliedDiscount.getDateDebut())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code promo pas encore valide");
-            }
-            if (appliedDiscount.getDateExpiration() != null && today.isAfter(appliedDiscount.getDateExpiration())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code promo expiré");
-            }
-
-            if (appliedDiscount.getNbMaxUtilisations() != null
-                    && appliedDiscount.getNbUtilisations() >= appliedDiscount.getNbMaxUtilisations()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code promo épuisé");
-            }
-
-            if (Boolean.TRUE.equals(appliedDiscount.getUsageUniqueParUser())) {
-                boolean dejaUtilise = promoUsageRepository
-                        .findByUserIdAndDiscountId(user.getId(), appliedDiscount.getId())
-                        .isPresent();
-                if (dejaUtilise) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Vous avez déjà utilisé ce code");
+                if (userDisc.isUsed()) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ce code promo a déjà été utilisé");
                 }
-            }
+                if (userDisc.getValidUntil() != null && LocalDateTime.now().isAfter(userDisc.getValidUntil())) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ce code promo a expiré");
+                }
 
-            if (appliedDiscount.getMontantMinAchat() != null
-                    && subtotalAmount.compareTo(appliedDiscount.getMontantMinAchat()) < 0) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Montant minimum de " + appliedDiscount.getMontantMinAchat() + " FCFA non atteint");
-            }
-
-            if (appliedDiscount.getType() == Discount.DiscountType.percentage) {
-                discountAmount = subtotalAmount.multiply(appliedDiscount.getValeur())
-                        .divide(BigDecimal.valueOf(100));
+                discountAmount = subtotalAmount.multiply(userDisc.getPercentage()).divide(BigDecimal.valueOf(100));
+                userDisc.setUsed(true);
+                userDiscountRepository.save(userDisc);
             } else {
-                discountAmount = appliedDiscount.getValeur().min(subtotalAmount);
-            }
+                if (!appliedDiscount.isActif()) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code promo inactif");
+                }
 
-            appliedDiscount.setNbUtilisations(appliedDiscount.getNbUtilisations() + 1);
-            discountRepository.save(appliedDiscount);
+                LocalDate today = LocalDate.now();
+                if (appliedDiscount.getDateDebut() != null && today.isBefore(appliedDiscount.getDateDebut())) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code promo pas encore valide");
+                }
+                if (appliedDiscount.getDateExpiration() != null && today.isAfter(appliedDiscount.getDateExpiration())) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code promo expiré");
+                }
+
+                if (appliedDiscount.getNbMaxUtilisations() != null
+                        && appliedDiscount.getNbUtilisations() >= appliedDiscount.getNbMaxUtilisations()) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code promo épuisé");
+                }
+
+                if (Boolean.TRUE.equals(appliedDiscount.getUsageUniqueParUser())) {
+                    boolean dejaUtilise = promoUsageRepository
+                            .findByUserIdAndDiscountId(user.getId(), appliedDiscount.getId())
+                            .isPresent();
+                    if (dejaUtilise) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Vous avez déjà utilisé ce code");
+                    }
+                }
+
+                if (appliedDiscount.getMontantMinAchat() != null
+                        && subtotalAmount.compareTo(appliedDiscount.getMontantMinAchat()) < 0) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Montant minimum de " + appliedDiscount.getMontantMinAchat() + " FCFA non atteint");
+                }
+
+                if (appliedDiscount.getType() == Discount.DiscountType.percentage) {
+                    discountAmount = subtotalAmount.multiply(appliedDiscount.getValeur())
+                            .divide(BigDecimal.valueOf(100));
+                } else {
+                    discountAmount = appliedDiscount.getValeur().min(subtotalAmount);
+                }
+
+                appliedDiscount.setNbUtilisations(appliedDiscount.getNbUtilisations() + 1);
+                discountRepository.save(appliedDiscount);
+            }
         }
 
         order.setDiscountApplied(discountAmount);
@@ -137,6 +155,7 @@ public class OrderService {
 
         cartService.clearCart(userEmail);
 
+        // @change [PROD-READY] Notifications envoyées pour toutes les commandes (CinetPay supprimé) - 2026-06-12
         notificationService.sendOrderNotifications(savedOrder);
 
         return savedOrder;

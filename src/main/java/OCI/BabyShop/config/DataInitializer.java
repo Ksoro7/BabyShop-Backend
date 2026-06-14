@@ -22,6 +22,7 @@ public class DataInitializer implements CommandLineRunner {
     private final DiscountRepository discountRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final ProductRepository productRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${admin.email:admin@rabishop.com}")
@@ -36,6 +37,8 @@ public class DataInitializer implements CommandLineRunner {
         seedAdmin();
         seedDiscounts();
         seedCategories();
+        // @change [PROD-READY] Migration one-time désactivée (version NULL déjà corrigée) - 2026-06-12
+        // fixProductVersion();
     }
 
     private void seedAdmin() {
@@ -131,12 +134,18 @@ public class DataInitializer implements CommandLineRunner {
         log.info("Seed category: {}", vetements.getName());
 
         List.of(
-                Category.builder().name("Enfants / Bébé").parent(vetements).imageUrl("assets/images/medias.png").build(),
+                Category.builder().name("Enfants / B\u00e9b\u00e9").parent(vetements).imageUrl("assets/images/medias.png").build(),
                 Category.builder().name("Femmes").parent(vetements).imageUrl("assets/images/medias.png").build(),
                 Category.builder().name("Hommes").parent(vetements).imageUrl("assets/images/medias.png").build()
         ).forEach(child -> {
             categoryRepository.save(child);
-            log.info("Seed category: {} (parent: Vêtements)", child.getName());
+            log.info("Seed category: {} (parent: V\u00eatements)", child.getName());
         });
     }
+
+    private void fixProductVersion() {
+        productRepository.fixNullVersion();
+        log.info("Version NULL corrigee");
+    }
+
 }

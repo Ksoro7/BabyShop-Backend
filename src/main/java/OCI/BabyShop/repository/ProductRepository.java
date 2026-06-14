@@ -4,6 +4,7 @@ import OCI.BabyShop.domain.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -43,4 +44,8 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     long countStockFaible(@Param("threshold") int threshold);
 
     List<Product> findTop5ByOrderByStockQtyAsc(Pageable pageable);
+
+    @Modifying
+    @Query(value = "UPDATE products SET version = 0 WHERE version IS NULL", nativeQuery = true)
+    void fixNullVersion();
 }
