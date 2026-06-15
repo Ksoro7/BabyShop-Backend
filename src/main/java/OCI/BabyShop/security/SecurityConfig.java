@@ -24,23 +24,16 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
-/*
- * Refactored:
- * - Un seul bean PasswordEncoder partage entre inscription et connexion
- * - DaoAuthenticationProvider configure avec le meme PasswordEncoder
- * - API REST pure : pas de httpBasic, pas de formLogin
- * - Sessions STATELESS, CSRF desactive
- * - /api/auth/** public, /api/admin/** reserve aux ADMIN
- */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    // @change [PROD-READY] Rate limiting sur les endpoints auth - 2026-06-12
     private final RateLimitingFilter rateLimitingFilter;
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
@@ -62,12 +55,14 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http)
+            throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -78,6 +73,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/products", "/api/products/**").permitAll()
                         .requestMatchers("/api/categories", "/api/categories/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
@@ -85,20 +81,28 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, authException) -> {
                             if (!response.isCommitted()) {
                                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                                response.setContentType("application/json");
-                                response.getWriter().write("{\"erreur\": \"Non autorisé\", \"message\": \""
-                                        + authException.getMessage() + "\"}");
+                                response.setContentType("application/json;charset=UTF-8");
+                                response.getWriter().write(
+                                        "{\"erreur\": \"Non autorisé\", \"message\": \""
+                                                + authException.getMessage() + "\"}"
+                                );
+                            }
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            if (!response.isCommitted()) {
+                                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                                response.setContentType("application/json;charset=UTF-8");
+                                response.getWriter().write(
+                                        "{\"erreur\": \"Accès refusé\"}"
+                                );
                             }
                         })
                 )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                // @change [PROD-READY] En-têtes de sécurité HTTP - 2026-06-12
-                // SÉCURITÉ : Protection contre le clickjacking (DENY), XSS, sniffing MIME, et HSTS
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.deny())
-                        // X-XSS-Protection non configuré (déprécié, retiré des navigateurs modernes)
                         .contentTypeOptions(Customizer.withDefaults())
                         .httpStrictTransportSecurity(hsts -> hsts
                                 .includeSubDomains(true)
@@ -106,9 +110,10 @@ public class SecurityConfig {
                         )
                 )
                 .authenticationProvider(authenticationProvider())
-                // SÉCURITÉ : RateLimitingFilter avant JwtAuthenticationFilter (tous deux avant UsernamePasswordAuthenticationFilter)
-                .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(rateLimitingFilter,
+                        UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -116,16 +121,26 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of(
-                corsOrigins.split(",")
-        ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+
+        // Fix : trim() pour éviter les espaces autour des URLs
+        List<String> origins = Arrays.stream(corsOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+
+        configuration.setAllowedOriginPatterns(origins);
+        configuration.setAllowedMethods(
+                List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+        );
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
+        configuration.setExposedHeaders(
+                List.of("Authorization", "Content-Disposition")
+        );
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }

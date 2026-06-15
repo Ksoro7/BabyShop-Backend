@@ -1,21 +1,27 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://ep-red-poetry-aqeofnux-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require}
-    username: ${DB_USERNAME:neondb_owner}
-    password: ${DB_PASSWORD:npg_FPlhqJ0Gdt3S}
+    url: jdbc:postgresql://ep-red-poetry-aqeofnux-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+    username: neondb_owner
+    password: npg_FPlhqJ0Gdt3S
     driver-class-name: org.postgresql.Driver
-
+    hikari:
+      maximum-pool-size: 3
+      minimum-idle: 1
   jpa:
-    hibernate:
-      ddl-auto: update
-    open-in-view: false
-
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
       - org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration
 
-jwt:
-  secret: ${JWT_SECRET:ZGV2LWJhYnlzaG9wLWxvY2FsLWp3dC1zZWNyZXQtbWluLTMyLWJ5dGVzLWtleQ==}
-  expiration: 86400000
-  refresh-expiration: 604800000
+app:
+  base-url: http://localhost:8081
+  cors-origins: http://localhost:4200
+
+admin:
+  email: admin@babyshop.com
+  password: admin123
