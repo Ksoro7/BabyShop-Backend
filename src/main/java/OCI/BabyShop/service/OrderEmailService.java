@@ -15,8 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
 
-// @change [PROD-READY] Désactivé (service inactif, réactiver via @Service quand mail prêt) - 2026-06-12
-// @Service
+@Service
 @RequiredArgsConstructor
 @Slf4j
 public class OrderEmailService {

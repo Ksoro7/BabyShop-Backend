@@ -4,21 +4,20 @@ import OCI.BabyShop.dto.AuthResponse;
 import OCI.BabyShop.dto.LoginRequest;
 import OCI.BabyShop.dto.RegisterRequest;
 import OCI.BabyShop.service.AuthService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-/*
- * Refactored:
- * - register retourne HttpStatus.CREATED (201) au lieu de OK
- * - @Valid sur tous les @RequestBody
- * - Le traitement des erreurs est delegue a GlobalExceptionHandler
- */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -26,30 +25,43 @@ public class AuthController {
 
     private final AuthService authService;
 
+    @Value("${app.cookie-secure:true}")
+    private boolean cookieSecure;
+
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        AuthResponse response = authService.register(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request,
+                                                  HttpServletResponse response) {
+        AuthResponse authResponse = authService.register(request);
+        addRefreshTokenCookie(response, authResponse.getRefreshToken());
+        return ResponseEntity.status(HttpStatus.CREATED).body(authResponse);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        AuthResponse response = authService.login(request);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request,
+                                               HttpServletResponse response) {
+        AuthResponse authResponse = authService.login(request);
+        addRefreshTokenCookie(response, authResponse.getRefreshToken());
+        return ResponseEntity.ok(authResponse);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, String>> logout(@RequestBody Map<String, String> body) {
-        String refreshToken = body.get("refreshToken");
-        if (refreshToken == null || refreshToken.isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("message", "Le token de rafraîchissement est requis"));
+    public ResponseEntity<Map<String, String>> logout(@RequestBody(required = false) Map<String, String> body,
+                                                       HttpServletRequest request,
+                                                       HttpServletResponse response) {
+        String refreshToken = null;
+        if (body != null) {
+            refreshToken = body.get("refreshToken");
         }
-        authService.logout(refreshToken);
+        if (refreshToken == null || refreshToken.isBlank()) {
+            refreshToken = extractRefreshTokenFromCookie(request);
+        }
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            authService.logout(refreshToken);
+        }
+        clearRefreshTokenCookie(response);
         return ResponseEntity.ok(Map.of("message", "Déconnexion réussie"));
     }
 
-    // @change [PROD-READY] Endpoint mot de passe oublié - 2026-06-12
     @PostMapping("/forgot-password")
     public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody Map<String, String> body) {
         String email = body.get("email");
@@ -61,7 +73,6 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    // @change [PROD-READY] Endpoint réinitialisation mot de passe - 2026-06-12
     @PostMapping("/reset-password")
     public ResponseEntity<Map<String, String>> resetPassword(@RequestBody Map<String, String> body) {
         String token = body.get("token");
@@ -79,12 +90,49 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refresh(@RequestBody Map<String, String> body) {
-        String refreshToken = body.get("refreshToken");
+    public ResponseEntity<AuthResponse> refresh(@RequestBody(required = false) Map<String, String> body,
+                                                 HttpServletRequest request,
+                                                 HttpServletResponse response) {
+        String refreshToken = null;
+        if (body != null) {
+            refreshToken = body.get("refreshToken");
+        }
+        if (refreshToken == null || refreshToken.isBlank()) {
+            refreshToken = extractRefreshTokenFromCookie(request);
+        }
         if (refreshToken == null || refreshToken.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-        AuthResponse response = authService.refresh(refreshToken);
-        return ResponseEntity.ok(response);
+        AuthResponse authResponse = authService.refresh(refreshToken);
+        addRefreshTokenCookie(response, authResponse.getRefreshToken());
+        return ResponseEntity.ok(authResponse);
+    }
+
+    private void addRefreshTokenCookie(HttpServletResponse response, String token) {
+        Cookie cookie = new Cookie("refreshToken", token);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(cookieSecure);
+        cookie.setPath("/api/auth");
+        cookie.setMaxAge(7 * 24 * 60 * 60);
+        cookie.setAttribute("SameSite", "Strict");
+        response.addCookie(cookie);
+    }
+
+    private void clearRefreshTokenCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie("refreshToken", null);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(cookieSecure);
+        cookie.setPath("/api/auth");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
+    }
+
+    private String extractRefreshTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+        return Arrays.stream(request.getCookies())
+                .filter(c -> "refreshToken".equals(c.getName()))
+                .map(Cookie::getValue)
+                .findFirst()
+                .orElse(null);
     }
 }

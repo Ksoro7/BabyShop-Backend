@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AdminOrderService {
 
-    // @change [PROD-READY] Suppression email (OrderEmailService désactivé) - 2026-06-12
     private final OrderRepository orderRepository;
 
     @Transactional(readOnly = true)

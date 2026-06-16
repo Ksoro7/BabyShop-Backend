@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://ep-red-poetry-aqeofnux-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-    username: neondb_owner
-    password: npg_FPlhqJ0Gdt3S
+    url: ${NEON_DB_URL:jdbc:postgresql://localhost:5432/babyshop_bd}
+    username: ${NEON_DB_USERNAME:postgres}
+    password: ${NEON_DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 3
@@ -16,12 +16,12 @@ spring:
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
-      - org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration
 
 app:
   base-url: http://localhost:8081
   cors-origins: http://localhost:4200
+  cookie-secure: false
 
 admin:
-  email: admin@babyshop.com
-  password: admin123
+  email: ${ADMIN_EMAIL:admin@babyshop.com}
+  password: ${ADMIN_PASSWORD:admin123}

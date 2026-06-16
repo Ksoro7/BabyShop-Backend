@@ -15,14 +15,28 @@ import java.time.LocalDateTime;
 @Slf4j
 public class NotificationService {
 
-    // @change [PROD-READY] Suppression email (OrderEmailService désactivé) - 2026-06-12
     private final OrderNotificationRepository notificationRepository;
+    private final OrderEmailService orderEmailService;
 
     public void sendOrderNotifications(Order order) {
+        try {
+            orderEmailService.sendOrderConfirmation(order);
+        } catch (Exception e) {
+            log.warn("Impossible d'envoyer l'email de confirmation: {}", e.getMessage());
+        }
         try {
             saveNotification(order, OrderNotification.NotificationChannel.WHATSAPP, OrderNotification.NotificationStatus.SENT);
         } catch (Exception e) {
             log.warn("Impossible de sauvegarder la notification WHATSAPP: {}", e.getMessage());
+        }
+    }
+
+    @Transactional
+    public void sendOrderConfirmedNotification(Order order) {
+        try {
+            orderEmailService.sendOrderConfirmed(order);
+        } catch (Exception e) {
+            log.warn("Impossible d'envoyer l'email de confirmation: {}", e.getMessage());
         }
     }
 

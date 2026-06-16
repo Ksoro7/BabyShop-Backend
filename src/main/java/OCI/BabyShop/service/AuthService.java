@@ -11,11 +11,14 @@ import OCI.BabyShop.repository.RefreshTokenRepository;
 import OCI.BabyShop.repository.UserDiscountRepository;
 import OCI.BabyShop.repository.UserRepository;
 import OCI.BabyShop.security.JwtUtil;
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -51,12 +54,16 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final JavaMailSender mailSender;
 
     @Value("${jwt.refresh-expiration}")
     private long refreshExpirationInMs;
 
     @Value("${app.base-url:http://localhost:4200}")
     private String appBaseUrl;
+
+    @Value("${spring.mail.username}")
+    private String fromEmail;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final int TOKEN_BYTES = 32;
@@ -173,10 +180,62 @@ public class AuthService {
         userRepository.save(user);
 
         String resetLink = appBaseUrl + "/reset-password?token=" + token;
-        // SÉCURITÉ : Email désactivé pour l'instant, on logge le lien
-        log.info("Reset password link: {}", resetLink);
+        envoyerEmailReset(user.getEmail(), resetLink);
 
         return Map.of("message", responseMessage);
+    }
+
+    private void envoyerEmailReset(String email, String resetLink) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromEmail);
+            helper.setTo(email);
+            helper.setSubject("Réinitialisation de votre mot de passe RaBiShop");
+
+            String html = """
+                    <!DOCTYPE html>
+                    <html>
+                    <head><meta charset="UTF-8"></head>
+                    <body style="margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;">
+                        <table style="max-width:600px;margin:20px auto;background:#fff;border-radius:8px;overflow:hidden;">
+                            <tr>
+                                <td style="background:linear-gradient(135deg,#e91e63,#ad1457);padding:30px;text-align:center;">
+                                    <h1 style="color:#fff;margin:0;font-size:24px;">RaBiShop</h1>
+                                    <p style="color:rgba(255,255,255,.85);margin:5px 0 0;">Réinitialisation de mot de passe</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:30px;">
+                                    <p style="font-size:16px;margin:0 0 20px;">Vous avez demandé une réinitialisation de votre mot de passe.</p>
+                                    <p style="margin:0 0 20px;">
+                                        <a href="%s"
+                                           style="display:inline-block;background:#e91e63;color:#fff;padding:12px 30px;border-radius:6px;text-decoration:none;font-size:16px;">
+                                           Réinitialiser mon mot de passe
+                                        </a>
+                                    </p>
+                                    <p style="color:#888;font-size:13px;">Ce lien expire dans 1 heure.</p>
+                                    <p style="color:#888;font-size:13px;">Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>
+                                    <p style="color:#888;font-size:13px;">Lien direct : <a href="%s">%s</a></p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="background:#f9f9f9;padding:20px;text-align:center;font-size:12px;color:#999;">
+                                    L'équipe RaBiShop
+                                </td>
+                            </tr>
+                        </table>
+                    </body>
+                    </html>
+                    """.formatted(resetLink, resetLink, resetLink);
+
+            helper.setText(html, true);
+            mailSender.send(message);
+            log.info("Email de réinitialisation envoyé à {}", email);
+        } catch (Exception e) {
+            log.warn("SMTP indisponible ({}), lien de réinitialisation (destinataire: {}): {}",
+                    e.getClass().getSimpleName(), email, resetLink);
+        }
     }
 
     @Transactional

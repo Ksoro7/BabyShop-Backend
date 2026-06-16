@@ -38,8 +38,8 @@ public class OrderController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> cancelOrder(@PathVariable UUID id) {
-        orderService.cancelOrder(id);
+    public ResponseEntity<String> cancelOrder(@PathVariable UUID id, Authentication authentication) {
+        orderService.cancelOrder(id, authentication.getName());
         return ResponseEntity.ok("Commande annulée avec succès");
     }
 }

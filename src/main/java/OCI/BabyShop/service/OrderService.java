@@ -47,7 +47,7 @@ public class OrderService {
         BigDecimal subtotalAmount = BigDecimal.ZERO;
 
         for (Map.Entry<UUID, Integer> entry : productQuantities.entrySet()) {
-            Product product = productRepository.findById(entry.getKey())
+            Product product = productRepository.findByIdWithLock(entry.getKey())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produit non trouvé"));
 
             if (product.getStockQty() < entry.getValue()) {
@@ -56,7 +56,6 @@ public class OrderService {
             }
 
             product.setStockQty(product.getStockQty() - entry.getValue());
-            productRepository.save(product);
 
             BigDecimal lineTotal = product.getPrice().multiply(BigDecimal.valueOf(entry.getValue()));
             subtotalAmount = subtotalAmount.add(lineTotal);
@@ -162,16 +161,24 @@ public class OrderService {
     }
 
     @Transactional
-    public void cancelOrder(UUID orderId) {
-        Order order = orderRepository.findById(orderId).orElseThrow();
+    public void cancelOrder(UUID orderId, String userEmail) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Commande non trouvée"));
+
+        if (!order.getUser().getEmail().equals(userEmail)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cette commande ne vous appartient pas");
+        }
+
         if (order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.PAID) {
-            throw new IllegalStateException("Impossible d'annuler cette commande.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Impossible d'annuler cette commande.");
         }
         order.setStatus(OrderStatus.CANCELLED);
         for (OrderItem item : order.getItems()) {
-            Product p = item.getProduct();
-            p.setStockQty(p.getStockQty() + item.getQuantity());
-            productRepository.save(p);
+            Product p = productRepository.findByIdWithLock(item.getProduct().getId())
+                    .orElse(null);
+            if (p != null) {
+                p.setStockQty(p.getStockQty() + item.getQuantity());
+            }
         }
         orderRepository.save(order);
     }

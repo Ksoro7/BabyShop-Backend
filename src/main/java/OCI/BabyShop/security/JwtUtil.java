@@ -14,6 +14,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 /*
@@ -95,6 +96,7 @@ public class JwtUtil {
     public String generateRefreshToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("type", "refresh");
+        claims.put("jti", UUID.randomUUID().toString());
         return createToken(claims, userDetails.getUsername(), refreshExpirationInMs);
     }
 
