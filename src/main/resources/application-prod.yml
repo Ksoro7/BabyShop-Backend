@@ -25,7 +25,7 @@ spring:
 
 app:
   base-url: ${APP_BASE_URL}
-  cors-origins: ${CORS_ORIGINS}
+  cors-origins: ${CORS_ORIGINS:https://ra-bi-shop-frontend.vercel.app}
   cookie-secure: true
 
 admin:
