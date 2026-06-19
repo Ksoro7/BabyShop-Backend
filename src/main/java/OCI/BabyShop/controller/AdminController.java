@@ -3,10 +3,10 @@ package OCI.BabyShop.controller;
 import OCI.BabyShop.domain.Product;
 import OCI.BabyShop.dto.ProductRequest;
 import OCI.BabyShop.dto.ProductResponseDto;
+import OCI.BabyShop.service.MediaUploadService;
 import OCI.BabyShop.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -14,9 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,9 +30,7 @@ public class AdminController {
     );
 
     private final ProductService productService;
-
-    @Value("${app.base-url}")
-    private String baseUrl;
+    private final MediaUploadService mediaUploadService;
 
     @GetMapping
     public ResponseEntity<List<ProductResponseDto>> getAllProducts() {
@@ -63,14 +58,9 @@ public class AdminController {
         String contentType = file.getContentType();
         if (contentType == null || !TYPES_AUTORISES.contains(contentType)) {
             return ResponseEntity.badRequest()
-                    .body(null); // géré par GlobalExceptionHandler
+                    .body(null);
         }
-        String uploadDir = "uploads/products/";
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        Path uploadPath = Path.of(uploadDir);
-        if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
-        Files.copy(file.getInputStream(), uploadPath.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
-        String fileUrl = baseUrl + "/uploads/products/" + fileName;
+        String fileUrl = mediaUploadService.upload(file, "uploads/products/");
         Product product = productService.addMedia(id, fileUrl, "IMAGE");
         return ResponseEntity.ok(product);
     }

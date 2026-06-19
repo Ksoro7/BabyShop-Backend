@@ -31,6 +31,11 @@ spring:
           starttls:
             enable: true
 
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+  api-key: ${CLOUDINARY_API_KEY:}
+  api-secret: ${CLOUDINARY_API_SECRET:}
+
 app:
   base-url: ${APP_BASE_URL:http://localhost:8081}
   upload-dir: uploads/products/
