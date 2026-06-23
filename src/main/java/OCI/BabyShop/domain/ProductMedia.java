@@ -3,7 +3,9 @@ package OCI.BabyShop.domain;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -31,6 +33,9 @@ public class ProductMedia {
 
     @Column(name = "display_order")
     private Integer order;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 
     public enum MediaType {
         IMAGE, VIDEO

@@ -42,6 +42,10 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedAdmin() {
+        if ("true".equals(System.getenv("RENDER")) && "Admin123!".equals(adminPassword)) {
+            throw new IllegalStateException("🛑 SÉCURITÉ CRITIQUE : Mot de passe admin par défaut utilisé en production (Render). Définissez la variable d'environnement 'admin.password' !");
+        }
+
         if (userRepository.findByEmail(adminEmail).isPresent()) {
             log.info("Admin déjà présent, skip seed");
             return;

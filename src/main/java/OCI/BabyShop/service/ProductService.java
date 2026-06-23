@@ -20,6 +20,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -98,20 +100,20 @@ public class ProductService {
 
     public Product getProduct(UUID id) {
         return productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Produit non trouvé"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produit non trouvé"));
     }
 
     @Transactional(readOnly = true)
     public ProductResponseDto getActiveProduct(UUID id) {
         Product product = productRepository.findActiveById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Produit non trouvé ou indisponible"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produit non trouvé ou indisponible"));
         return toResponseDto(product);
     }
 
     @Transactional
     public Product createProduct(ProductRequest request) {
         Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("Catégorie non trouvée"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Catégorie non trouvée"));
 
         Product product = Product.builder()
                 .sku(request.getSku())
@@ -141,7 +143,7 @@ public class ProductService {
     @Transactional
     public Product updateProduct(UUID id, ProductRequest request) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Produit non trouvé"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produit non trouvé"));
 
         Integer oldStock = product.getStockQty();
 
@@ -152,7 +154,7 @@ public class ProductService {
         if (request.getStockQty() != null) product.setStockQty(request.getStockQty());
         if (request.getCategoryId() != null) {
             Category category = categoryRepository.findById(request.getCategoryId())
-                    .orElseThrow(() -> new IllegalArgumentException("Catégorie non trouvée"));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Catégorie non trouvée"));
             product.setCategory(category);
         }
         product.setActive(request.isActive());
@@ -181,7 +183,7 @@ public class ProductService {
     @Transactional
     public Product addMedia(UUID productId, String url, String type) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("Produit non trouvé"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produit non trouvé"));
         ProductMedia media = ProductMedia.builder()
                 .product(product)
                 .url(url)
@@ -195,7 +197,7 @@ public class ProductService {
     @Transactional
     public void deleteProduct(UUID id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Produit non trouvé"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produit non trouvé"));
 
         if (orderRepository.hasOrderItemsForProduct(id)) {
             cartItemRepository.deleteByProductId(id);
@@ -211,7 +213,7 @@ public class ProductService {
     @Transactional
     public void restoreProduct(UUID id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Produit non trouvé"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produit non trouvé"));
 
         product.setActive(true);
         product.setDeleted(false);

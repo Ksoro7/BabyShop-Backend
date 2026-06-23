@@ -50,7 +50,7 @@ public class AdminMediaService {
                 .type(media.getType().name())
                 .productName(productName)
                 .productId(productId)
-                .uploadedAt(LocalDateTime.now())
+                .uploadedAt(media.getCreatedAt() != null ? media.getCreatedAt() : LocalDateTime.now())
                 .build();
     }
 }

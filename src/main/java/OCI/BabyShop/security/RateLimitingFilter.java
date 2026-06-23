@@ -30,6 +30,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RateLimitingFilter extends OncePerRequestFilter {
 
     private final Map<String, RateLimitEntry> attempts = new ConcurrentHashMap<>();
+    private volatile long lastPurgeTime = System.currentTimeMillis();
+    private static final long PURGE_INTERVAL_MS = 60 * 60 * 1000L; // 1 heure
 
     private static final long LOGIN_WINDOW_MS = 15 * 60 * 1000L;
     private static final int LOGIN_MAX_ATTEMPTS = 5;
@@ -67,6 +69,11 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         String key = ip + ":" + path;
         long now = System.currentTimeMillis();
 
+        // Purge périodique pour éviter les fuites mémoire
+        if (now - lastPurgeTime > PURGE_INTERVAL_MS) {
+            purgeOldEntries(now);
+        }
+
         // SÉCURITÉ : compute est atomique (ConcurrentHashMap) — pas de race condition
         RateLimitEntry entry = attempts.compute(key, (k, existing) -> {
             if (existing == null || (now - existing.windowStart) > windowMs) {
@@ -96,6 +103,17 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             return xForwardedFor.split(",")[0].trim();
         }
         return request.getRemoteAddr();
+    }
+
+    private synchronized void purgeOldEntries(long now) {
+        if (now - lastPurgeTime > PURGE_INTERVAL_MS) {
+            // Supprime les entrées plus vieilles que la fenêtre la plus longue (STRICT_WINDOW_MS)
+            attempts.entrySet().removeIf(entry -> 
+                (now - entry.getValue().windowStart) > STRICT_WINDOW_MS
+            );
+            lastPurgeTime = now;
+            log.info("RateLimitingFilter: purge effectuée, taille map = {}", attempts.size());
+        }
     }
 
     private record RateLimitEntry(int count, long windowStart) {}

@@ -4,6 +4,7 @@ import OCI.BabyShop.dto.AuthResponse;
 import OCI.BabyShop.dto.LoginRequest;
 import OCI.BabyShop.dto.RegisterRequest;
 import OCI.BabyShop.service.AuthService;
+// Import conservé uniquement pour la lecture des cookies (extractRefreshTokenFromCookie)
 import jakarta.servlet.http.Cookie;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -18,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/auth")
