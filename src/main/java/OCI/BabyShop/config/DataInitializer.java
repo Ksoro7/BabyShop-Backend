@@ -116,7 +116,12 @@ public class DataInitializer implements CommandLineRunner {
     private void seedCategories() {
         if (categoryRepository.count() > 0) {
             categoryRepository.findAll().forEach(cat -> {
-                if (cat.getImageUrl() == null) {
+                String expectedUrl = CATEGORY_IMAGES.get(cat.getName());
+                if (expectedUrl != null && !expectedUrl.equals(cat.getImageUrl())) {
+                    cat.setImageUrl(expectedUrl);
+                    categoryRepository.save(cat);
+                    log.info("Category image updated: {} -> {}", cat.getName(), expectedUrl);
+                } else if (expectedUrl == null && cat.getImageUrl() == null) {
                     cat.setImageUrl("assets/images/medias.png");
                     categoryRepository.save(cat);
                     log.info("Category image set: {} -> {}", cat.getName(), cat.getImageUrl());
@@ -131,7 +136,7 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         Category ordinateurs = categoryRepository.save(
-                Category.builder().name("Ordinateurs").imageUrl("assets/images/ordinateurs.png").build());
+                Category.builder().name("Ordinateurs").imageUrl("assets/images/ordinateur.png").build());
         log.info("Seed category: {}", ordinateurs.getName());
 
         Category chaussures = categoryRepository.save(
@@ -155,6 +160,11 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Seed category: {} (parent: V\u00eatements)", child.getName());
         });
     }
+
+    private static final java.util.Map<String, String> CATEGORY_IMAGES = java.util.Map.of(
+            "Ordinateurs", "assets/images/ordinateur.png",
+            "V\u00eatements", "assets/images/v\u00eatement.png"
+    );
 
     private void fixProductVersion() {
         productRepository.fixNullVersion();
