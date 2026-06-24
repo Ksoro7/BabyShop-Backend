@@ -5,6 +5,7 @@ import OCI.BabyShop.dto.ProductRequest;
 import OCI.BabyShop.dto.ProductResponseDto;
 import OCI.BabyShop.service.MediaUploadService;
 import OCI.BabyShop.service.ProductService;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -51,7 +52,16 @@ public class AdminController {
 
     @PostMapping(value = "/{id}/media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Product> uploadMedia(@PathVariable UUID id,
-                                               @RequestParam("file") MultipartFile file) throws IOException {
+                                               @RequestParam("file") MultipartFile file,
+                                               HttpSession session) throws IOException {
+        Integer uploadCount = (Integer) session.getAttribute("UPLOAD_COUNT");
+        if (uploadCount == null) {
+            uploadCount = 0;
+        }
+        if (uploadCount >= 3) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(null);
+        }
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
@@ -62,6 +72,7 @@ public class AdminController {
         }
         String fileUrl = mediaUploadService.upload(file, "uploads/products/");
         Product product = productService.addMedia(id, fileUrl, "IMAGE");
+        session.setAttribute("UPLOAD_COUNT", uploadCount + 1);
         return ResponseEntity.ok(product);
     }
 
