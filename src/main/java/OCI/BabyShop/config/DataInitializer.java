@@ -122,11 +122,16 @@ public class DataInitializer implements CommandLineRunner {
                     log.info("Category image set: {} -> {}", cat.getName(), cat.getImageUrl());
                 }
             });
+            if (categoryRepository.findByName("Autres").isEmpty()) {
+                categoryRepository.save(
+                        Category.builder().name("Autres").imageUrl("assets/images/medias.png").build());
+                log.info("Seed category: Autres");
+            }
             return;
         }
 
         Category ordinateurs = categoryRepository.save(
-                Category.builder().name("Ordinateurs").imageUrl("assets/images/medias.png").build());
+                Category.builder().name("Ordinateurs").imageUrl("assets/images/ordinateurs.png").build());
         log.info("Seed category: {}", ordinateurs.getName());
 
         Category chaussures = categoryRepository.save(
@@ -134,8 +139,12 @@ public class DataInitializer implements CommandLineRunner {
         log.info("Seed category: {}", chaussures.getName());
 
         Category vetements = categoryRepository.save(
-                Category.builder().name("Vêtements").imageUrl("assets/images/medias.png").build());
+                Category.builder().name("Vêtements").imageUrl("assets/images/vêtement.png").build());
         log.info("Seed category: {}", vetements.getName());
+
+        Category autres = categoryRepository.save(
+                Category.builder().name("Autres").imageUrl("assets/images/medias.png").build());
+        log.info("Seed category: {}", autres.getName());
 
         List.of(
                 Category.builder().name("Enfants / B\u00e9b\u00e9").parent(vetements).imageUrl("assets/images/medias.png").build(),
