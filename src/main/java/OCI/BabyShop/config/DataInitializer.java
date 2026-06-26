@@ -115,20 +115,25 @@ public class DataInitializer implements CommandLineRunner {
 
     private void seedCategories() {
         if (categoryRepository.count() > 0) {
+            // @clean [CATEGORY-IMG] "Autres" est créé avec l'icône shopping.
+            // Si "Autres" existait déjà (seed précédent), son imageUrl n'est pas modifiée.
             if (categoryRepository.findByName("Autres").isEmpty()) {
                 categoryRepository.save(
-                        Category.builder().name("Autres").build());
+                        Category.builder().name("Autres").imageUrl("assets/images/medias.svg").build());
                 log.info("Seed category: Autres");
             }
             return;
         }
 
+        // @clean [CATEGORY-IMG] Les catégories racines utilisent leur icône dédiée.
+        // Les sous-catégories et catégories génériques utilisent l'icône shopping neutre.
+        // En production, l'admin peut remplacer chaque image via le CRUD (upload Cloudinary).
         Category ordinateurs = categoryRepository.save(
                 Category.builder().name("Ordinateurs").imageUrl("assets/images/ordinateur.png").build());
         log.info("Seed category: {}", ordinateurs.getName());
 
         Category chaussures = categoryRepository.save(
-                Category.builder().name("Chaussures").imageUrl("assets/images/medias.png").build());
+                Category.builder().name("Chaussures").imageUrl("assets/images/medias.svg").build());
         log.info("Seed category: {}", chaussures.getName());
 
         Category vetements = categoryRepository.save(
@@ -136,13 +141,13 @@ public class DataInitializer implements CommandLineRunner {
         log.info("Seed category: {}", vetements.getName());
 
         Category autres = categoryRepository.save(
-                Category.builder().name("Autres").imageUrl("assets/images/medias.png").build());
+                Category.builder().name("Autres").imageUrl("assets/images/medias.svg").build());
         log.info("Seed category: {}", autres.getName());
 
         List.of(
-                Category.builder().name("Enfants / B\u00e9b\u00e9").parent(vetements).imageUrl("assets/images/medias.png").build(),
-                Category.builder().name("Femmes").parent(vetements).imageUrl("assets/images/medias.png").build(),
-                Category.builder().name("Hommes").parent(vetements).imageUrl("assets/images/medias.png").build()
+                Category.builder().name("Enfants / B\u00e9b\u00e9").parent(vetements).imageUrl("assets/images/medias.svg").build(),
+                Category.builder().name("Femmes").parent(vetements).imageUrl("assets/images/medias.svg").build(),
+                Category.builder().name("Hommes").parent(vetements).imageUrl("assets/images/medias.svg").build()
         ).forEach(child -> {
             categoryRepository.save(child);
             log.info("Seed category: {} (parent: V\u00eatements)", child.getName());
