@@ -15,5 +15,6 @@ public class CategoryTreeDto {
     private String name;
     private String description;
     private String imageUrl;
+    private UUID parentId;
     private List<CategoryTreeDto> children;
 }

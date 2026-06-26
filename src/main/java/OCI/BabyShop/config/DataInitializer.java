@@ -115,21 +115,9 @@ public class DataInitializer implements CommandLineRunner {
 
     private void seedCategories() {
         if (categoryRepository.count() > 0) {
-            categoryRepository.findAll().forEach(cat -> {
-                String expectedUrl = CATEGORY_IMAGES.get(cat.getName());
-                if (expectedUrl != null && !expectedUrl.equals(cat.getImageUrl())) {
-                    cat.setImageUrl(expectedUrl);
-                    categoryRepository.save(cat);
-                    log.info("Category image updated: {} -> {}", cat.getName(), expectedUrl);
-                } else if (expectedUrl == null && cat.getImageUrl() == null) {
-                    cat.setImageUrl("assets/images/medias.png");
-                    categoryRepository.save(cat);
-                    log.info("Category image set: {} -> {}", cat.getName(), cat.getImageUrl());
-                }
-            });
             if (categoryRepository.findByName("Autres").isEmpty()) {
                 categoryRepository.save(
-                        Category.builder().name("Autres").imageUrl("assets/images/medias.png").build());
+                        Category.builder().name("Autres").build());
                 log.info("Seed category: Autres");
             }
             return;
@@ -144,7 +132,7 @@ public class DataInitializer implements CommandLineRunner {
         log.info("Seed category: {}", chaussures.getName());
 
         Category vetements = categoryRepository.save(
-                Category.builder().name("Vêtements").imageUrl("assets/images/vêtement.png").build());
+                Category.builder().name("V\u00eatements").imageUrl("assets/images/vetement.png").build());
         log.info("Seed category: {}", vetements.getName());
 
         Category autres = categoryRepository.save(
@@ -160,11 +148,6 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Seed category: {} (parent: V\u00eatements)", child.getName());
         });
     }
-
-    private static final java.util.Map<String, String> CATEGORY_IMAGES = java.util.Map.of(
-            "Ordinateurs", "assets/images/ordinateur.png",
-            "V\u00eatements", "assets/images/v\u00eatement.png"
-    );
 
     private void fixProductVersion() {
         productRepository.fixNullVersion();

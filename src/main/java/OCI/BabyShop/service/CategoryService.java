@@ -39,6 +39,9 @@ public class CategoryService {
         if (category.getParent() != null && category.getParent().getId() != null) {
             Category parent = categoryRepository.findById(category.getParent().getId())
                     .orElseThrow(() -> new IllegalArgumentException("Catégorie parente non trouvée"));
+            if (parent.getParent() != null) {
+                throw new IllegalArgumentException("Impossible d'ajouter plus de 2 niveaux de hiérarchie. Choisissez une catégorie racine comme parent.");
+            }
             category.setParent(parent);
         }
         return categoryRepository.save(category);
@@ -68,6 +71,9 @@ public class CategoryService {
                 }
                 Category parent = categoryRepository.findById(parentId)
                         .orElseThrow(() -> new IllegalArgumentException("Catégorie parente non trouvée"));
+                if (parent.getParent() != null) {
+                    throw new IllegalArgumentException("Impossible d'ajouter plus de 2 niveaux de hiérarchie. Choisissez une catégorie racine comme parent.");
+                }
                 existing.setParent(parent);
             } else {
                 existing.setParent(null);
@@ -119,6 +125,7 @@ public class CategoryService {
                 .name(category.getName())
                 .description(category.getDescription())
                 .imageUrl(category.getImageUrl())
+                .parentId(category.getParent() != null ? category.getParent().getId() : null)
                 .children(children)
                 .build();
     }
