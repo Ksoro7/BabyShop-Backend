@@ -123,7 +123,7 @@ class OrderServiceIntegrationTest {
     void createOrder_shouldDecrementStock() {
         Map<UUID, Integer> items = Map.of(testProduct.getId(), 3);
 
-        orderService.createOrder(USER_EMAIL, items, null, "WHATSAPP");
+        orderService.createOrder(USER_EMAIL, items, null, "WHATSAPP", "Test User", "+2250101020203", "Test Address");
 
         Product updated = productRepository.findById(testProduct.getId()).orElseThrow();
         assertEquals(7, updated.getStockQty());
@@ -134,7 +134,7 @@ class OrderServiceIntegrationTest {
         Map<UUID, Integer> items = Map.of(testProduct.getId(), 20);
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
-                () -> orderService.createOrder(USER_EMAIL, items, null, "WHATSAPP"));
+                () -> orderService.createOrder(USER_EMAIL, items, null, "WHATSAPP", "Test User", "+2250101020203", "Test Address"));
         assertTrue(ex.getReason().contains("Stock insuffisant"));
     }
 
@@ -145,7 +145,7 @@ class OrderServiceIntegrationTest {
                 testProduct2.getId(), 1
         );
 
-        orderService.createOrder(USER_EMAIL, items, null, "WHATSAPP");
+        orderService.createOrder(USER_EMAIL, items, null, "WHATSAPP", "Test User", "+2250101020203", "Test Address");
 
         assertEquals(8, productRepository.findById(testProduct.getId()).orElseThrow().getStockQty());
         assertEquals(4, productRepository.findById(testProduct2.getId()).orElseThrow().getStockQty());
@@ -165,7 +165,7 @@ class OrderServiceIntegrationTest {
         Map<UUID, Integer> items = Map.of(testProduct.getId(), 2);
         BigDecimal expectedTotal = new BigDecimal("10000").subtract(new BigDecimal("1000"));
 
-        Order order = orderService.createOrder(USER_EMAIL, items, "TESTPROMO10", "WHATSAPP");
+        Order order = orderService.createOrder(USER_EMAIL, items, "TESTPROMO10", "WHATSAPP", "Test User", "+2250101020203", "Test Address");
 
         assertEquals(0, new BigDecimal("9000").compareTo(order.getTotalAmount()));
         assertNotNull(order.getDiscountApplied());
@@ -175,7 +175,7 @@ class OrderServiceIntegrationTest {
     @Test
     void cancelOrder_shouldRestoreStock() {
         Map<UUID, Integer> items = Map.of(testProduct.getId(), 4);
-        Order order = orderService.createOrder(USER_EMAIL, items, null, "WHATSAPP");
+        Order order = orderService.createOrder(USER_EMAIL, items, null, "WHATSAPP", "Test User", "+2250101020203", "Test Address");
 
         orderService.cancelOrder(order.getId(), USER_EMAIL);
 
@@ -196,7 +196,7 @@ class OrderServiceIntegrationTest {
                 .build());
 
         Map<UUID, Integer> items = Map.of(testProduct.getId(), 2);
-        Order order = orderService.createOrder(USER_EMAIL, items, null, "WHATSAPP");
+        Order order = orderService.createOrder(USER_EMAIL, items, null, "WHATSAPP", "Test User", "+2250101020203", "Test Address");
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> orderService.cancelOrder(order.getId(), "other@test.com"));
@@ -208,13 +208,13 @@ class OrderServiceIntegrationTest {
         Map<UUID, Integer> items = Map.of(UUID.randomUUID(), 1);
 
         assertThrows(ResponseStatusException.class,
-                () -> orderService.createOrder(USER_EMAIL, items, null, "WHATSAPP"));
+                () -> orderService.createOrder(USER_EMAIL, items, null, "WHATSAPP", "Test User", "+2250101020203", "Test Address"));
     }
 
     @Test
     void createOrder_shouldUseAllStockThenCancel() {
         Map<UUID, Integer> items = Map.of(testProduct2.getId(), 5);
-        Order order = orderService.createOrder(USER_EMAIL, items, null, "WHATSAPP");
+        Order order = orderService.createOrder(USER_EMAIL, items, null, "WHATSAPP", "Test User", "+2250101020203", "Test Address");
 
         assertEquals(0, productRepository.findById(testProduct2.getId()).orElseThrow().getStockQty());
 
