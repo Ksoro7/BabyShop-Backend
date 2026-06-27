@@ -31,9 +31,17 @@ public class OrderService {
     private final NotificationService notificationService;
     private final CartService cartService;
 
+    /**
+     * Crée une commande avec les informations de livraison du client.
+     *
+     * @param customerName     nom complet saisi au checkout (peut différer du User)
+     * @param customerPhone    téléphone saisi au checkout
+     * @param deliveryAddress  adresse/zone de livraison
+     */
     @Transactional
     public Order createOrder(String userEmail, Map<UUID, Integer> productQuantities,
-                             String discountCode, String paymentMethod) {
+                             String discountCode, String paymentMethod,
+                             String customerName, String customerPhone, String deliveryAddress) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur non trouvé"));
 
@@ -42,6 +50,9 @@ public class OrderService {
                 .status(OrderStatus.PENDING)
                 .paymentMethod(paymentMethod != null ? paymentMethod : "WHATSAPP")
                 .deliveryDate(LocalDate.now().plusDays(2))
+                .customerName(customerName)
+                .customerPhone(customerPhone)
+                .deliveryAddress(deliveryAddress)
                 .build();
 
         BigDecimal subtotalAmount = BigDecimal.ZERO;
@@ -228,6 +239,9 @@ public class OrderService {
                 .paymentMethod(order.getPaymentMethod())
                 .paymentReference(order.getPaymentReference())
                 .deliveryDate(order.getDeliveryDate() != null ? order.getDeliveryDate().toString() : null)
+                .customerName(order.getCustomerName())
+                .customerPhone(order.getCustomerPhone())
+                .deliveryAddress(order.getDeliveryAddress())
                 .items(itemDtos)
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())

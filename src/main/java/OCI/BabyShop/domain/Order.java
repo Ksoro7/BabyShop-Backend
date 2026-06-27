@@ -38,6 +38,24 @@ public class Order {
 
     private LocalDate deliveryDate;
 
+    /**
+     * Nom complet du client saisi au checkout (propre à chaque commande).
+     * Nullable pour compatibilité avec les anciennes commandes.
+     */
+    private String customerName;
+
+    /**
+     * Téléphone du client saisi au checkout (propre à chaque commande).
+     * Nullable pour les anciennes commandes.
+     */
+    private String customerPhone;
+
+    /**
+     * Adresse de livraison saisie au checkout.
+     * Nullable pour les anciennes commandes.
+     */
+    private String deliveryAddress;
+
     private String paymentMethod;
 
     private String paymentReference;

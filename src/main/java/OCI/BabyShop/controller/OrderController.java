@@ -19,11 +19,19 @@ public class OrderController {
 
     private final OrderService orderService;
 
+    /**
+     * Crée une commande avec les informations de livraison.
+     */
     @PostMapping
     public ResponseEntity<Order> createOrder(@RequestBody OrderRequest request, Authentication authentication) {
         String userEmail = authentication.getName();
-        Order order = orderService.createOrder(userEmail, request.getProductQuantities(),
-                request.getDiscountCode(), request.getPaymentMethod());
+        Order order = orderService.createOrder(userEmail,
+                request.getProductQuantities(),
+                request.getDiscountCode(),
+                request.getPaymentMethod(),
+                request.getCustomerName(),
+                request.getCustomerPhone(),
+                request.getDeliveryAddress());
         return ResponseEntity.ok(order);
     }
 

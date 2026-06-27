@@ -18,6 +18,9 @@ public class UserOrderResponse {
     private String paymentMethod;
     private String paymentReference;
     private String deliveryDate;
+    private String customerName;
+    private String customerPhone;
+    private String deliveryAddress;
     private List<OrderItemDto> items;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

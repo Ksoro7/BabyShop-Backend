@@ -79,14 +79,23 @@ public class AdminOrderService {
                 })
                 .collect(Collectors.toList());
 
-        String customerName = order.getUser().getFirstName() + " " + order.getUser().getLastName();
-        if (customerName.isBlank()) customerName = order.getUser().getEmail();
+        // Préfère les infos saisies au checkout (sur la commande)
+        // pour les nouvelles commandes ; fallback sur User pour les anciennes.
+        String customerName = order.getCustomerName();
+        if (customerName == null || customerName.isBlank()) {
+            customerName = order.getUser().getFirstName() + " " + order.getUser().getLastName();
+            if (customerName.isBlank()) customerName = order.getUser().getEmail();
+        }
+        String customerPhone = order.getCustomerPhone() != null
+                ? order.getCustomerPhone()
+                : order.getUser().getPhone();
 
         return AdminOrderResponse.builder()
                 .id(order.getId())
                 .customerName(customerName)
                 .customerEmail(order.getUser().getEmail())
-                .customerPhone(order.getUser().getPhone())
+                .customerPhone(customerPhone)
+                .deliveryAddress(order.getDeliveryAddress())
                 .subtotal(subtotal)
                 .discount(order.getDiscountApplied())
                 .total(order.getTotalAmount())

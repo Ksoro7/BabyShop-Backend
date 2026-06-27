@@ -15,6 +15,7 @@ public class AdminOrderResponse {
     private String customerName;
     private String customerEmail;
     private String customerPhone;
+    private String deliveryAddress;
     private BigDecimal subtotal;
     private BigDecimal discount;
     private BigDecimal total;
